@@ -1,0 +1,53 @@
+{
+  "name": "job-board",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@google/genai": "^2.8.0",
+    "@prisma/client": "^6.0.0",
+    "@sendgrid/mail": "^8.1.6",
+    "@tailwindcss/typography": "^0.5.19",
+    "@tiptap/extension-image": "^3.26.0",
+    "@tiptap/react": "^3.25.0",
+    "@tiptap/starter-kit": "^3.25.0",
+    "@types/bcrypt": "^6.0.0",
+    "bcrypt": "^6.0.0",
+    "bullmq": "^5.78.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.40.0",
+    "ioredis": "^5.11.1",
+    "jose": "^6.2.3",
+    "lucide-react": "^0.453.0",
+    "next": "14.2.16",
+    "next-themes": "^0.4.6",
+    "pdf-parse": "^1.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-dropzone": "^15.0.0",
+    "recharts": "^3.8.1",
+    "sanitize-html": "^2.17.4",
+    "stripe": "^22.2.0",
+    "tailwind-merge": "^3.6.0",
+    "twilio": "^6.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/pdf-parse": "^1.1.5",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/sanitize-html": "^2.16.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.16",
+    "postcss": "^8",
+    "prisma": "^6.0.0",
+    "tailwindcss": "^3.4.1",
+    "tsx": "^4.0.0",
+    "typescript": "^5"
+  }
+}

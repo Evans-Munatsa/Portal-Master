@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
+}
+
+model Tenant {
+  id          Int      @id @default(autoincrement())
+  name        String
+  domain      String?  @unique
+  plan        String   @default("free")
+  features    String?  // JSON string
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  users       User[]
+  jobs        Job[]
+  
+  @@map("tenants")
+}
+
+model User {
+  id                      Int              @id @default(autoincrement())
+  email                   String           @unique
+  password                String
+  tenant_id               Int?
+  tenant                  Tenant?          @relation(fields: [tenant_id], references: [id])
+
+  role                    String           @default("CANDIDATE")
+  name                    String?
+  professional_title      String?
+  experience_level        String?
+  resume_text             String?
+  linkedin_url            String?
+  github_url              String?
+  reset_token             String?
+  reset_token_expiry      DateTime?
+  job_matches             JobMatch[]
+  jobs_posted             Job[]
+  applications            JobApplication[]
+  saved_jobs              SavedJob[]
+  resume_tasks            ResumeTask[]
+  interviews_as_employer  Interview[]      @relation("InterviewEmployer")
+  interviews_as_candidate Interview[]      @relation("InterviewCandidate")
+  video_interviews        VideoInterview[]
+
+  @@map("users")
+}
+
+model VideoInterview {
+  id             Int      @id @default(autoincrement())
+  candidate_id   Int
+  candidate      User     @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
+  video_url      String   @default("") // holds base64 or url reference
+  questions      String   // JSON string of questions, user answers metadata, etc.
+  score          Int      @default(0)
+  feedback       String   @default("")
+  status         String   @default("COMPLETED") // COMPLETED, IN_PROGRESS
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  @@map("video_interviews")
+}
+
+model Job {
+  id           Int              @id @default(autoincrement())
+  title        String
+  company      String
+  location     String
+  description  String
+  salary_min   Int?
+  salary_max   Int?
+  tenant_id    Int?
+  tenant       Tenant?          @relation(fields: [tenant_id], references: [id])
+  employer_id  Int?
+  employer     User?            @relation(fields: [employer_id], references: [id])
+  status       String           @default("ACTIVE") // ACTIVE, PENDING, CLOSED
+  matches      JobMatch[]
+  applications JobApplication[]
+  saved_by     SavedJob[]
+
+  years_experience String?
+  mandatory_skills String[]         @default([])
+  tech_stack       String[]         @default([])
+
+  @@map("jobs")
+}
+
+model JobApplication {
+  id           Int      @id @default(autoincrement())
+  candidate_id Int
+  job_id       Int
+  status       String   @default("Pending")
+  applied_at   DateTime @default(now())
+
+  candidate  User        @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
+  job        Job         @relation(fields: [job_id], references: [id], onDelete: Cascade)
+  interviews Interview[]
+
+  @@unique([candidate_id, job_id])
+  @@map("job_applications")
+}
+
+model SavedJob {
+  id           Int      @id @default(autoincrement())
+  candidate_id Int
+  job_id       Int
+  saved_at     DateTime @default(now())
+
+  candidate User @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
+  job       Job  @relation(fields: [job_id], references: [id], onDelete: Cascade)
+
+  @@unique([candidate_id, job_id])
+  @@map("saved_jobs")
+}
+
+model JobMatch {
+  id             Int    @id @default(autoincrement())
+  candidate_id   Int
+  job_id         Int
+  match_score    Int
+  missing_skills String
+  matched_skills String
+  recommendation String
+  fit_summary    String
+
+  candidate User @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
+  job       Job  @relation(fields: [job_id], references: [id], onDelete: Cascade)
+
+  @@unique([candidate_id, job_id])
+  @@map("job_matches")
+}
+
+model ResumeTask {
+  id           Int      @id @default(autoincrement())
+  candidate_id Int
+  status       String   @default("QUEUED") // QUEUED, PROCESSING, COMPLETED, FAILED
+  progress     Int      @default(0) // 0 to 100
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  candidate User @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
+
+  @@map("resume_tasks")
+}
+
+model Interview {
+  id             Int      @id @default(autoincrement())
+  application_id Int
+  employer_id    Int
+  candidate_id   Int
+  proposed_time  DateTime
+  status         String   @default("Proposed") // Proposed, Confirmed, Rescheduled, Cancelled
+  notes          String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  application JobApplication @relation(fields: [application_id], references: [id], onDelete: Cascade)
+  employer    User           @relation("InterviewEmployer", fields: [employer_id], references: [id], onDelete: Cascade)
+  candidate   User           @relation("InterviewCandidate", fields: [candidate_id], references: [id], onDelete: Cascade)
+
+  @@map("interviews")
+}

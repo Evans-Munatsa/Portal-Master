@@ -1,0 +1,9 @@
+{
+  "name": "LaunchPath",
+  "description": "LaunchPath AI Job Matching & Placement System",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
