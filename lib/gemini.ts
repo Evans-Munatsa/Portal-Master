@@ -1,6 +1,54 @@
 import { GoogleGenAI, Type } from '@google/genai';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+export const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+  httpOptions: {
+    headers: {
+      'User-Agent': 'aistudio-build',
+    }
+  }
+});
+
+export async function rewriteJobDescription(htmlContent: string, mode: 'proofread' | 'expand' | 'summarize'): Promise<string> {
+  const modeInstructions = {
+    proofread: 'Fix any grammar, spelling, typography, or phrasing errors, and clean up the language to be extremely professional. Keep the core description details, but format it cleanly and beautifully.',
+    expand: 'Expand on the given description by adding professional depth, key expectations, and rich industry vocabulary where appropriate. Ensure it reads like a premium, highly exciting job opportunity.',
+    summarize: 'Synthesize the description into a beautifully structured set of highly-readable paragraph overviews and clear bullet points outlining responsibilities and required qualifications.'
+  };
+
+  const instruction = modeInstructions[mode] || modeInstructions.proofread;
+  
+  const prompt = `
+    You are an elite talent acquisition expert and HR copywriter.
+    Your task is to rewrite the following job posting description text/HTML as requested:
+    "${instruction}"
+
+    CRITICAL RULES:
+    1. Your output must be formatted with clean, modern semantic HTML tags (like <p>, <strong>, <em>, <ul>, <ol>, <li>, <h2>, and <h3>).
+    2. Do NOT include html/head/body or script tags.
+    3. Return ONLY the resulting HTML content.
+    4. Do NOT wrap the output in markdown fences (like \`\`\`html or \`\`\`).
+    5. Ensure all grammar, spelling, and phrasing are completely flawless.
+
+    Job Description Content to rewrite:
+    ${htmlContent}
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.5-flash',
+      contents: prompt,
+    });
+    
+    let text = response.text || '';
+    // Strip markdown code fences if output by mistake
+    text = text.replace(/^```html\s*/i, '').replace(/```$/, '').trim();
+    return text;
+  } catch (error) {
+    console.error('[Gemini AI] Error in rewriteJobDescription:', error);
+    throw error;
+  }
+}
 
 export function sanitizeResume(rawString: string): string {
   // Strip control characters but preserve tabs and newlines to prevent payload overflow
