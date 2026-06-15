@@ -63,7 +63,7 @@ export default function LaunchPathLogo({
       <div className={`inline-flex items-center gap-3 ${className}`}>
         {renderIcon(true)}
         <div className="flex flex-col select-none">
-          <span className={`font-extrabold text-xl tracking-tight text-[#120A2B] leading-none font-sans`}>
+          <span className={`font-mono font-extrabold text-xl tracking-tight text-[#120A2B] leading-none font-sans`}>
             LaunchPath
           </span>
           <span className="text-[9px] font-mono font-bold tracking-[0.25em] text-[#120A2B]/70 uppercase mt-1 leading-none">
