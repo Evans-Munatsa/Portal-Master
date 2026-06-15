@@ -93,7 +93,7 @@ export default function Home() {
                           96% Ready
                         </span>
                       </div>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">Senior Frontend Developer • Kenya</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">Senior Frontend Developer • Cape Town</p>
                       <div className="flex flex-wrap gap-2">
                         <span className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-300 font-medium">React</span>
                         <span className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-300 font-medium">TypeScript</span>
@@ -113,7 +113,7 @@ export default function Home() {
                           92% Ready
                         </span>
                       </div>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">UX/UI Designer • Nigeria</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">UX/UI Designer • Cape Town</p>
                       <div className="flex flex-wrap gap-2">
                         <span className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-300 font-medium">Figma</span>
                         <span className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-300 font-medium">User Research</span>

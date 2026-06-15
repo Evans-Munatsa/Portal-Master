@@ -17,7 +17,7 @@ function CircularProgress({ score }: { score: number }) {
   const COLORS = [score >= 80 ? '#16a34a' : score >= 50 ? '#ca8a04' : '#dc2626', 'transparent'];
 
   return (
-    <div className="w-12 h-12 relative flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-full">
+    <div className="w-14 h-14 relative flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-full">
       <div className="absolute inset-0">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -120,7 +120,7 @@ function ReadinessGauge({ score }: { score: number | null | undefined }) {
   const strokeDashoffset = circumference * (1 - displayScore / 100);
 
   return (
-    <div className="ready-score-gauge w-12 h-12 relative flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-full shadow-sm">
+    <div className="ready-score-gauge w-14 h-14 relative flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-full shadow-sm">
       <div className="absolute inset-0 flex items-center justify-center">
         <svg className="w-full h-full transform -rotate-90 p-1">
           <circle 
@@ -503,7 +503,7 @@ export default function CandidateDashboard({ data, user, onRefresh, onLogout }: 
               >
                 <div className="flex justify-between items-start mb-4 gap-4">
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-bold text-lg text-slate-950 dark:text-white group-hover:text-[#7145FF] dark:group-hover:text-violet-400 transition-colors leading-snug truncate">{match.title}</h3>
+                    <h3 className="font-mono font-bold text-lg text-slate-950 dark:text-white group-hover:text-[#7145FF] dark:group-hover:text-violet-400 transition-colors leading-snug truncate">{match.title}</h3>
                     <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mt-1 truncate">{match.company} • {match.location}</p>
                     <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded inline-block">{formatSalary(match.salary_min, match.salary_max)}</p>
                   </div>
@@ -521,7 +521,7 @@ export default function CandidateDashboard({ data, user, onRefresh, onLogout }: 
                         {match.match_score > 0 ? (
                           <CircularProgress score={match.match_score} />
                         ) : (
-                          <div className="w-12 h-12 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-bold text-slate-400 select-none border border-dashed border-slate-300 dark:border-slate-700">
+                          <div className="w-14 h-14 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-bold text-slate-400 select-none border border-dashed border-slate-300 dark:border-slate-700">
                             —
                           </div>
                         )}
@@ -536,7 +536,7 @@ export default function CandidateDashboard({ data, user, onRefresh, onLogout }: 
                     </div>
                   </div>
                 </div>
-                <div className="text-sm text-slate-700 dark:text-slate-300 mb-4 h-12 overflow-hidden line-clamp-2 leading-relaxed font-normal">
+                <div className="text-sm text-slate-700 dark:text-slate-300 mb-4 h-18 overflow-hidden line-clamp-4 leading-relaxed font-normal">
                   {match.fit_summary}
                 </div>
               </div>
@@ -624,10 +624,10 @@ export default function CandidateDashboard({ data, user, onRefresh, onLogout }: 
              <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                    <div>
-                      <h2 className="text-2xl font-extrabold tracking-tight dark:text-white">
+                      <h2 className="text-2xl font-mono font-extrabold tracking-tight dark:text-white">
                         {activeTab === 'Saved' ? 'Saved Jobs' : activeTab === 'AllJobs' ? 'All Active Vacancies' : 'AI Matched Job Feed'}
                       </h2>
-                      <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mt-1">
+                      <p className="text-sm font-mono font-medium text-slate-600 dark:text-slate-400 mt-1">
                         {activeTab === 'Jobs' ? 'Based on your parsed resume text & criteria.' : activeTab === 'AllJobs' ? 'All active job vacancies published on LaunchPath.' : 'Jobs you have bookmarked.'}
                       </p>
                    </div>
@@ -717,7 +717,7 @@ export default function CandidateDashboard({ data, user, onRefresh, onLogout }: 
                     <div key={app.id} className="p-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex flex-col gap-4">
                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                          <div>
-                           <h3 className="font-bold text-lg text-slate-950 dark:text-white leading-normal">{app.job.title}</h3>
+                           <h3 className="font-mono font-bold text-lg text-slate-950 dark:text-white leading-normal">{app.job.title}</h3>
                            <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mt-0.5">{app.job.company} • {app.job.location}</p>
                            <p className="text-xs text-slate-550 mt-2 font-medium">Applied on {new Date(app.applied_at).toLocaleDateString()}</p>
                          </div>

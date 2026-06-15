@@ -138,32 +138,11 @@ export default function CandidateNavbar({
                   </span>
                 )}
               </button>
-
-              {/* My Profile */}
-              <button
-                onClick={() => handleTabClick('Profile')}
-                className={getLinkClasses(isDashboard ? activeTab === 'Profile' : false)}
-              >
-                <User className="w-4 h-4" />
-                <span>My Profile</span>
-              </button>
-
-              {/* Submit Resume (New Profile) */}
-              <Link
-                href="/candidate/new"
-                className={getLinkClasses(pathname === '/candidate/new')}
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span>Upload Resume</span>
-              </Link>
             </nav>
           </div>
 
           {/* Right section: Profile & Menu Controls */}
-          <div className="flex items-center gap-4">
-            
-            {/* Theme Toggle */}
-            <ThemeToggle />
+          <div className="flex items-center gap-4"> 
             
             {/* Desktop Settings & Profile actions */}
             <div className="hidden md:flex items-center gap-4 relative">
@@ -234,6 +213,9 @@ export default function CandidateNavbar({
                 )}
               </div>
             </div>
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
 
             {/* Mobile menu button */}
             <div className="flex md:hidden">
