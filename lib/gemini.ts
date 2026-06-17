@@ -62,7 +62,7 @@ export async function autofillJobPosting(title: string) {
     const prompt = `
       You are an expert technical recruiter. Based on the job title "${title}", 
       generate a compelling, detailed job description, required years of experience, 
-      mandatory skills, and recommended tech stack.
+      mandatory skills, recommended tech stack, a typical location, and realistic salary bounds (e.g. annual in ZAR or USD, min/max as integers).
       Return the result strictly as a JSON object matching the requested schema.
     `;
 
@@ -91,9 +91,21 @@ export async function autofillJobPosting(title: string) {
               type: Type.ARRAY,
               items: { type: Type.STRING },
               description: "A list of 5-8 specific tools, frameworks, and languages."
+            },
+            location: {
+              type: Type.STRING,
+              description: "A typical location, e.g. 'Remote', 'Johannesburg', 'Cape Town', or 'San Francisco'."
+            },
+            salaryMin: {
+              type: Type.INTEGER,
+              description: "A typical starting monthly or annual salary (integer value, e.g. 450000)."
+            },
+            salaryMax: {
+              type: Type.INTEGER,
+              description: "A typical maximum monthly or annual salary (integer value, e.g. 700000)."
             }
           },
-          required: ["description", "yearsExperienceRequired", "mandatorySkills", "techStack"]
+          required: ["description", "yearsExperienceRequired", "mandatorySkills", "techStack", "location", "salaryMin", "salaryMax"]
         }
       }
     });
@@ -106,7 +118,10 @@ export async function autofillJobPosting(title: string) {
       description: `<p>We are looking for a ${title}. More details to follow.</p>`,
       yearsExperienceRequired: 0,
       mandatorySkills: [],
-      techStack: []
+      techStack: [],
+      location: 'Remote',
+      salaryMin: 400000,
+      salaryMax: 650000
     };
   }
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Clock, Search, Sun, Moon, PlusCircle, Briefcase, Users, CheckCircle, ShieldAlert, Video, Sparkles, Play } from 'lucide-react';
+import { Clock, Search, Sun, Moon, PlusCircle, Briefcase, Users, CheckCircle, ShieldAlert, Video, Sparkles, Play, Lock } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 import RichTextEditor from '@/components/RichTextEditor';
@@ -11,6 +11,21 @@ import ThemeToggle from '@/components/ThemeToggle';
 
 export default function EmployerDashboard({ data, user, onRefresh, onLogout }: { data: any, user: any, onRefresh: () => void, onLogout: () => void }) {
   const { jobs, applications } = data;
+
+  const isJobUnlocked = (jobId: number | string | null) => {
+    if (!jobId) return false;
+    const numericId = parseInt(String(jobId), 10);
+    if (isNaN(numericId)) return false;
+    if (user?.tenant?.plan === 'premium') return true;
+    try {
+      const features = JSON.parse(user?.tenant?.features || '{}');
+      if (Array.isArray(features.unlockedJobIds) && features.unlockedJobIds.includes(numericId)) {
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  };
+
   const [activeTab, setActiveTab] = useState('Overview');
   const [selectedApplicant, setSelectedApplicant] = useState<any>(null);
   const [interviewDate, setInterviewDate] = useState('');
@@ -112,6 +127,61 @@ export default function EmployerDashboard({ data, user, onRefresh, onLogout }: {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (activeTab === 'Applicants' && !selectedJobFilter && (jobs || []).length === 1) {
+      setSelectedJobFilter(jobs[0].id);
+    }
+  }, [activeTab, selectedJobFilter, jobs]);
+
+  const [unlocking, setUnlocking] = useState(false);
+
+  const handleUnlock = async (action: 'checkout' | 'bypass', jobIdToUnlock?: any) => {
+    const targetJobId = jobIdToUnlock || selectedJobFilter;
+    if (!targetJobId) {
+      alert('Please select a specific job posting to unlock.');
+      return;
+    }
+    setUnlocking(true);
+    try {
+      const res = await fetch('/api/employer/unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, jobId: targetJobId })
+      });
+      if (res.ok) {
+        const result = await res.json();
+        if (result.bypassed) {
+          alert('Demo Bypass success! Candidate Pipeline for this role unlocked.');
+          onRefresh();
+        } else if (result.payfast) {
+          const { url, data } = result.payfast;
+          const form = document.createElement('form');
+          form.action = url;
+          form.method = 'POST';
+          form.style.display = 'none';
+
+          for (const [key, value] of Object.entries(data)) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = value as string;
+            form.appendChild(input);
+          }
+
+          document.body.appendChild(form);
+          form.submit();
+        }
+      } else {
+        const errorData = await res.json();
+        alert('Failed to process unlock: ' + errorData.error);
+      }
+    } catch (err: any) {
+      alert('Error unlocking pipeline: ' + err.message);
+    } finally {
+      setUnlocking(false);
+    }
+  };
+
   // Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -178,7 +248,7 @@ ${description}
         const resetData = await res.json();
         
         if (resetData.bypassed || !resetData.payfast) {
-          alert('Job post created successfully (Bypassed payment)!');
+          alert('Job post created successfully!');
           setTitle('');
           setDescription('');
           setYearsExperience('');
@@ -380,14 +450,33 @@ ${description}
 
                         {/* Metadata row */}
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
-                          <span className="flex items-center gap-1">
+                          {job.company && (
+                            <>
+                              <span className="font-bold text-slate-800 dark:text-slate-200">{job.company}</span>
+                              <span className="text-slate-300 dark:text-slate-700">•</span>
+                            </>
+                          )}
+                          <span className="flex items-center gap-1 flex-shrink-0">
                             <Clock className="w-3.5 h-3.5 text-slate-400" />
                             {job.years_experience ? `${job.years_experience} Experience` : 'No experience limit'}
                           </span>
                           <span className="text-slate-300 dark:text-slate-700">•</span>
-                          <span>{job.location || 'Remote'}</span>
+                          <span className="flex-shrink-0">{job.location || 'Remote'}</span>
+                          {(job.salary_min || job.salary_max) && (
+                            <>
+                              <span className="text-slate-300 dark:text-slate-700">•</span>
+                              <span className="text-indigo-600 dark:text-indigo-400 font-semibold flex-shrink-0">
+                                {job.salary_min && job.salary_max 
+                                  ? `R${Number(job.salary_min).toLocaleString()} - R${Number(job.salary_max).toLocaleString()}` 
+                                  : job.salary_min 
+                                    ? `From R${Number(job.salary_min).toLocaleString()}` 
+                                    : `Up to R${Number(job.salary_max).toLocaleString()}`
+                                }
+                              </span>
+                            </>
+                          )}
                           <span className="text-slate-300 dark:text-slate-700">•</span>
-                          <span>Job ID: #{job.id}</span>
+                          <span className="flex-shrink-0">Job ID: #{job.id}</span>
                         </div>
 
                         {/* Rich HTML Description snippet */}
@@ -433,7 +522,7 @@ ${description}
                             }}
                             className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-xs text-slate-700 dark:text-slate-300 px-3.5 py-1.5 rounded-lg transition"
                           >
-                            View Pipeline
+                            View Applicants
                           </button>
                         </div>
                       </div>
@@ -447,7 +536,128 @@ ${description}
         )}
 
         {activeTab === 'Applicants' && (
-          <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+          !selectedJobFilter && (jobs || []).length > 1 ? (
+            <div className="max-w-5xl mx-auto py-8 space-y-6">
+              <div className="text-center space-y-2 max-w-2xl mx-auto">
+                <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Review Applicants by Job Posting</h2>
+                <p className="text-sm text-slate-500">
+                  Select one of your open roles below to review matched candidate profiles, view AI fit scores, and schedule interviews.
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
+                {(jobs || []).map((j: any) => {
+                  const appCount = (applications || []).filter((a: any) => a.job_id === j.id).length;
+                  const unlocked = isJobUnlocked(j.id);
+                  return (
+                    <div key={j.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm flex flex-col justify-between hover:border-[#7145FF]/30 transition-all">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${unlocked ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-405'}`}>
+                            {unlocked ? 'Unlocked 🔓' : 'Locked 🔒'}
+                          </span>
+                          <span className="text-xs font-semibold text-slate-400">{appCount} {appCount === 1 ? 'Candidate' : 'Candidates'}</span>
+                        </div>
+                        <h3 className="font-extrabold text-md text-slate-900 dark:text-white line-clamp-1">{j.title}</h3>
+                        <p className="text-xs text-slate-500">{j.company} • {j.location}</p>
+                      </div>
+                      <button
+                        onClick={() => setSelectedJobFilter(j.id)}
+                        className="mt-6 w-full text-center bg-slate-100 hover:bg-[#7145FF] hover:text-white dark:bg-slate-800 dark:hover:bg-[#7145FF] text-slate-700 dark:text-slate-350 font-bold py-2 rounded-lg text-xs transition cursor-pointer"
+                      >
+                        View Applicants
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : selectedJobFilter && !isJobUnlocked(selectedJobFilter) && (applications || []).filter((a: any) => a.job_id === selectedJobFilter).length > 0 ? (
+            <div className="max-w-3xl mx-auto py-8">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden p-8 md:p-12 text-center space-y-6 transition-all">
+                
+                <div className="mx-auto w-20 h-20 bg-[#7145FF]/10 dark:bg-[#7145FF]/20 rounded-full flex items-center justify-center animate-pulse">
+                  <Lock className="w-10 h-10 text-[#7145FF]" />
+                </div>
+
+                <div className="space-y-3">
+                  <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                    Candidate Pipeline Locked 🔒
+                  </h2>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs uppercase font-extrabold tracking-wider">
+                    Role: <span className="text-[#7145FF] dark:text-violet-400">{(jobs || []).find((j: any) => j.id === selectedJobFilter)?.title || 'Selected Role'}</span>
+                  </p>
+                  <p className="text-slate-600 dark:text-slate-400 max-w-xl mx-auto text-sm md:text-md leading-relaxed">
+                    Great news! You have <span className="font-extrabold text-[#7145FF] dark:text-violet-400">{(applications || []).filter((a: any) => a.job_id === selectedJobFilter).length} matched candidates</span> aligned and waiting for this specific role. Unlock this pipeline to review matches, view assessment details, and schedule interviews.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-lg mx-auto py-4 text-left">
+                  <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
+                    <CheckCircle className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Unlock All Candidate Profiles</h4>
+                      <p className="text-[11px] text-slate-500">Access names, contact data, resumes, and full experience summaries.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-955 border border-slate-100 dark:border-slate-800">
+                    <Sparkles className="w-5 h-5 text-[#7145FF] mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">AI Role-Fit Index</h4>
+                      <p className="text-[11px] text-slate-500">See direct matching score, tool breakdown, and AI recruiter analysis.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 animate-pulse">
+                    <Video className="w-5 h-5 text-sky-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 font-extrabold text-indigo-600 dark:text-indigo-400 font-sans">Practice Pitch Recordings</h4>
+                      <p className="text-[11px] text-slate-500">Listen to candidate&apos;s verified answers with active playback.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-955 border border-slate-100 dark:border-slate-800">
+                    <Clock className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Direct Interview Proposals</h4>
+                      <p className="text-[11px] text-slate-500">Schedule video conferences, dates, times, and send virtual links natively.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-150 dark:border-slate-800 pt-6">
+                  <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+                    <button
+                      onClick={() => handleUnlock('checkout', selectedJobFilter)}
+                      disabled={unlocking}
+                      className="w-full sm:w-auto bg-[#7145FF] hover:bg-[#5b32e6] text-white font-extrabold px-8 py-3 rounded-xl text-sm transition shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      {unlocking ? 'Connecting...' : 'Unlock Candidate Pipeline (R499.00 once-off)'}
+                    </button>
+                    <button
+                      onClick={() => handleUnlock('bypass', selectedJobFilter)}
+                      disabled={unlocking}
+                      className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold px-6 py-3 rounded-xl text-sm transition flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      Bypass & Unlock (Demo)
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-3">
+                    Unlock allows lifetime views of applicants matching this specific job vacancy. Secured by Payfast.
+                  </p>
+
+                  {(jobs || []).length > 1 && (
+                    <button
+                      onClick={() => setSelectedJobFilter(null)}
+                      className="text-xs text-slate-500 hover:text-[#7145FF] hover:underline font-bold flex items-center gap-1 mx-auto mt-4 cursor-pointer"
+                    >
+                      ← Back to Job Postings
+                    </button>
+                  )}
+                </div>
+
+              </div>
+            </div>
+          ) : (
+            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
             
             {/* Sidebar Column: Sorting & Filtering Sidebar */}
             <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-5 shadow-sm sticky top-4">
@@ -756,6 +966,7 @@ ${description}
           })()}
             </div>
           </div>
+          )
         )}
 
         {/* SETTINGS TAB */}

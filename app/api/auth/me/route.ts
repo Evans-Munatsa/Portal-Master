@@ -21,7 +21,18 @@ export async function GET() {
         resume_text: true,
       },
     });
-    return NextResponse.json({ user });
+
+    if (user) {
+      // If Thanos override is active, simulate the role on the returned user object
+      const activeUser = {
+        ...user,
+        role: session.role,
+        realRole: session.realRole,
+      };
+      return NextResponse.json({ user: activeUser });
+    }
+
+    return NextResponse.json({ user: null });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ user: null });

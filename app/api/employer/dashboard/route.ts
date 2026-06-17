@@ -11,7 +11,13 @@ export async function GET() {
 
     const user = await db.user.findUnique({
       where: { id: session.userId },
-      select: { name: true, role: true }
+      select: { 
+        id: true,
+        name: true, 
+        role: true, 
+        tenant_id: true,
+        tenant: true 
+      }
     });
 
     const myJobs = await db.job.findMany({

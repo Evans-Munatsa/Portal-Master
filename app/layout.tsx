@@ -1,6 +1,8 @@
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { POPIAConsent } from "@/components/POPIAConsent";
+import { ToastProvider } from "@/components/ToastNotification";
+import { ThanosSwitcher } from "@/components/ThanosSwitcher";
 import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 
 const inter = Inter({
@@ -35,8 +37,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
-          <POPIAConsent />
+          <ToastProvider>
+            {children}
+            <POPIAConsent />
+            <ThanosSwitcher />
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>
