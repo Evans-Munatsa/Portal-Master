@@ -49,9 +49,20 @@ export async function getSession() {
   const payload = await verifyToken(token);
   if (!payload || !payload.userId) return null;
   
+  const realRole = (payload.role as string || '').toUpperCase();
+  let role = realRole;
+
+  if (realRole === 'SUPERADMIN') {
+    const thanosRole = cookieStore.get('thanos-role')?.value;
+    if (thanosRole && ['CANDIDATE', 'EMPLOYER', 'SUPERADMIN'].includes(thanosRole.toUpperCase())) {
+      role = thanosRole.toUpperCase();
+    }
+  }
+  
   return {
     userId: payload.userId as number,
-    role: payload.role as string,
+    role: role,
+    realRole: realRole,
   };
 }
 
@@ -62,10 +73,11 @@ export async function checkRole(allowedRoles: string[]) {
     return { authorized: false, error: 'Unauthorized', status: 401, session: null };
   }
 
-  if (!allowedRoles.includes(session.role)) {
-    console.error(`[SECURITY EXCEPTION] User ${session.userId} (Role: ${session.role}) attempted unauthorized access to a protected route requiring roles: ${allowedRoles.join(', ')}.`);
-    return { authorized: false, error: 'Forbidden', status: 403, session };
+  // Genuinely authenticated SUPERADMIN has god-mode bypass on all portal verification checks!
+  if (session.realRole === 'SUPERADMIN' || allowedRoles.includes(session.role)) {
+    return { authorized: true, error: null, status: 200, session };
   }
 
-  return { authorized: true, error: null, status: 200, session };
+  console.error(`[SECURITY EXCEPTION] User ${session.userId} (Role: ${session.role}) attempted unauthorized access to a protected route requiring roles: ${allowedRoles.join(', ')}.`);
+  return { authorized: false, error: 'Forbidden', status: 403, session };
 }

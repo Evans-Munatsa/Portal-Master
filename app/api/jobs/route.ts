@@ -17,7 +17,9 @@ export async function POST(req: Request) {
       description,
       years_experience,
       mandatory_skills,
-      tech_stack
+      tech_stack,
+      salary_min,
+      salary_max
     } = await req.json();
 
     if (!title || !description) {
@@ -46,6 +48,9 @@ export async function POST(req: Request) {
     const mandatorySkillsArr = parseStringArray(mandatory_skills);
     const techStackArr = parseStringArray(tech_stack);
 
+    const salaryMinVal = salary_min && !isNaN(parseInt(String(salary_min), 10)) ? parseInt(String(salary_min), 10) : null;
+    const salaryMaxVal = salary_max && !isNaN(parseInt(String(salary_max), 10)) ? parseInt(String(salary_max), 10) : null;
+
     const job = await db.job.create({
       data: {
         title,
@@ -55,7 +60,9 @@ export async function POST(req: Request) {
         employer_id: session.userId,
         years_experience: yearsExp,
         mandatory_skills: mandatorySkillsArr,
-        tech_stack: techStackArr
+        tech_stack: techStackArr,
+        salary_min: salaryMinVal,
+        salary_max: salaryMaxVal
       }
     });
 

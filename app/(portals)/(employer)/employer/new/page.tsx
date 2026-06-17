@@ -20,6 +20,10 @@ export default function EmployerNewPage() {
   const [mandatorySkills, setMandatorySkills] = useState('');
   const [techStack, setTechStack] = useState('');
   const [duration, setDuration] = useState('30');
+  const [company, setCompany] = useState('');
+  const [location, setLocation] = useState('');
+  const [salaryMin, setSalaryMin] = useState('');
+  const [salaryMax, setSalaryMax] = useState('');
 
   const [aiLoading, setAiLoading] = useState(false);
   const [savingJob, setSavingJob] = useState(false);
@@ -31,6 +35,12 @@ export default function EmployerNewPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (user && !company) {
+      setCompany(user.tenant?.name || user.name || '');
+    }
+  }, [user, company]);
 
   const fetchSession = useCallback(async () => {
     try {
@@ -75,6 +85,9 @@ export default function EmployerNewPage() {
       setYearsExperience(aiData.yearsExperienceRequired ? `${aiData.yearsExperienceRequired}+ years` : '');
       setMandatorySkills((aiData.mandatorySkills || []).join(', '));
       setTechStack((aiData.techStack || []).join(', '));
+      setLocation(aiData.location || 'Remote');
+      setSalaryMin(aiData.salaryMin ? String(aiData.salaryMin) : '');
+      setSalaryMax(aiData.salaryMax ? String(aiData.salaryMax) : '');
     } catch (err: any) {
       alert('AI Autofill failed: ' + err.message);
     } finally {
@@ -91,6 +104,9 @@ export default function EmployerNewPage() {
       const fullDesc = `
 ${description}
 
+**Company:** ${company || 'My Company'}
+**Location:** ${location || 'Remote'}
+**Salary Range:** ${salaryMin && salaryMax ? `R${salaryMin} - R${salaryMax}` : salaryMin ? `From R${salaryMin}` : salaryMax ? `Up to R${salaryMax}` : 'Negotiable'}
 **Years of Experience Required:** ${yearsExperience}
 **Mandatory Skills:** ${mandatorySkills}
 **Tech Stack:** ${techStack}
@@ -102,17 +118,21 @@ ${description}
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           title, 
+          company,
+          location,
           description: fullDesc,
           years_experience: yearsExperience,
           mandatory_skills: mandatorySkills,
-          tech_stack: techStack
+          tech_stack: techStack,
+          salary_min: salaryMin,
+          salary_max: salaryMax
         }),
       });
       if (res.ok) {
         const resetData = await res.json();
         
         if (resetData.bypassed || !resetData.payfast) {
-          alert('Job post created successfully (Bypassed payment)!');
+          alert('Job post created successfully!');
           router.push('/employer/dashboard');
         } else if (resetData.payfast) {
           const { url, data } = resetData.payfast;
@@ -231,6 +251,56 @@ ${description}
                       />
                     </div>
 
+                    {/* Company and Location group */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Company Name</label>
+                        <input 
+                          type="text"
+                          value={company}
+                          onChange={e => setCompany(e.target.value)}
+                          className="w-full p-2.5 border border-slate-300 dark:border-slate-700 rounded-xl text-sm bg-transparent focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                          placeholder="e.g. LaunchPath Corp"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Job Location</label>
+                        <input 
+                          type="text"
+                          value={location}
+                          onChange={e => setLocation(e.target.value)}
+                          className="w-full p-2.5 border border-slate-300 dark:border-slate-700 rounded-xl text-sm bg-transparent focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                          placeholder="e.g. Johannesburg, GP or Remote"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Salary Range group */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Minimum Salary (e.g. Annual or Monthly value)</label>
+                        <input 
+                          type="number"
+                          value={salaryMin}
+                          onChange={e => setSalaryMin(e.target.value)}
+                          className="w-full p-2.5 border border-slate-300 dark:border-slate-700 rounded-xl text-sm bg-transparent focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                          placeholder="e.g. 450000"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Maximum Salary</label>
+                        <input 
+                          type="number"
+                          value={salaryMax}
+                          onChange={e => setSalaryMax(e.target.value)}
+                          className="w-full p-2.5 border border-slate-300 dark:border-slate-700 rounded-xl text-sm bg-transparent focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                          placeholder="e.g. 750000"
+                        />
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Years of Experience</label>
@@ -284,9 +354,9 @@ ${description}
                 <button 
                   type="submit"
                   disabled={savingJob || !title || !description}
-                  className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-200 transition disabled:opacity-50 text-base"
+                  className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-200 transition disabled:opacity-50 text-base cursor-pointer"
                 >
-                  Pay & Publish Job (R500)
+                  {savingJob ? 'Publishing...' : 'Publish Job Posting'}
                 </button>
               </form>
           </div>
