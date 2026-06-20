@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import LaunchPathLogo from './LaunchPathLogo';
+import { ThanosSidebarWidget } from './ThanosSidebarWidget';
 import { 
   Sparkles, 
   Briefcase, 
@@ -24,6 +25,7 @@ export interface PortalSidebarProps {
     name?: string;
     email?: string;
     role?: string;
+    realRole?: string;
     professional_title?: string;
   };
   activeTab?: string;
@@ -328,6 +330,10 @@ export default function PortalSidebar({
             : renderCandidateItems()}
         </div>
 
+        {user?.realRole === 'SUPERADMIN' && (
+          <ThanosSidebarWidget currentRole={role} />
+        )}
+
         <div className="p-4 border-t border-slate-900 bg-[#070b14]/65">
           <div className="flex items-center justify-between gap-3 group bg-slate-900/40 hover:bg-slate-900/80 border border-slate-800/40 p-3 rounded-xl transition-all duration-200">
             <div className="flex items-center gap-2.5 overflow-hidden">
@@ -370,6 +376,10 @@ export default function PortalSidebar({
             ? renderEmployerItems()
             : renderCandidateItems()}
         </div>
+
+        {user?.realRole === 'SUPERADMIN' && (
+          <ThanosSidebarWidget currentRole={role} />
+        )}
 
         <div className="p-4 border-t border-slate-900 bg-[#070b14]/65">
           <div className="flex items-center justify-between gap-3 group bg-slate-900/40 hover:bg-slate-900/80 border border-slate-800/40 p-3 rounded-xl transition-all duration-200">

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { 
   X, 
   Mail, 
@@ -9,7 +10,11 @@ import {
   TrendingUp, 
   Calendar, 
   Clock, 
-  ShieldAlert 
+  ShieldAlert,
+  Award,
+  Check,
+  Video,
+  Save
 } from 'lucide-react';
 
 interface SuperadminCandidateInspectorProps {
@@ -18,6 +23,7 @@ interface SuperadminCandidateInspectorProps {
   inspectTab: string;
   setInspectTab: (tab: string) => void;
   interviews: any[];
+  onRefresh?: () => void;
 }
 
 export default function SuperadminCandidateInspector({
@@ -25,8 +31,107 @@ export default function SuperadminCandidateInspector({
   setInspectCandidate,
   inspectTab,
   setInspectTab,
-  interviews = []
+  interviews = [],
+  onRefresh
 }: SuperadminCandidateInspectorProps) {
+  const readiness = inspectCandidate?.video_interviews?.[0];
+  const [manualScore, setManualScore] = useState(0);
+  const [manualFeedback, setManualFeedback] = useState('');
+  const [manualQuestions, setManualQuestions] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+
+  useEffect(() => {
+    if (readiness) {
+      setManualScore(readiness.score || 0);
+      setManualFeedback(readiness.feedback || '');
+      let parsed: any[] = [];
+      try {
+        parsed = typeof readiness.questions === 'string'
+          ? JSON.parse(readiness.questions)
+          : (readiness.questions || []);
+      } catch (e) {
+        parsed = [];
+      }
+      setManualQuestions(parsed);
+    } else {
+      setManualScore(0);
+      setManualFeedback('');
+      setManualQuestions([]);
+    }
+    setSubmitSuccess(false);
+    setSubmitError('');
+  }, [inspectCandidate, readiness]);
+
+  const handleSaveGrades = async () => {
+    if (!readiness) return;
+    setIsSubmitting(true);
+    setSubmitError('');
+    setSubmitSuccess(false);
+
+    try {
+      const res = await fetch('/api/superadmin/video-interview/grade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          interviewId: readiness.id,
+          score: manualScore,
+          feedback: manualFeedback,
+          questions: manualQuestions
+        })
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.error || 'Failed to submit score grading');
+      }
+
+      setSubmitSuccess(true);
+      
+      const updatedVideoArr = [{
+        ...readiness,
+        score: manualScore,
+        feedback: manualFeedback,
+        status: 'COMPLETED',
+        questions: typeof readiness.questions === 'string' 
+          ? JSON.stringify(manualQuestions) 
+          : manualQuestions
+      }];
+      
+      setInspectCandidate({
+        ...inspectCandidate,
+        video_interviews: updatedVideoArr
+      });
+
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (err: any) {
+      setSubmitError(err.message || 'Error processing grades.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleQuestionTranscriptChange = (qi: number, value: string) => {
+    const updated = [...manualQuestions];
+    updated[qi] = { ...updated[qi], transcript: value };
+    setManualQuestions(updated);
+  };
+
+  const handleQuestionScoreChange = (qi: number, value: number) => {
+    const updated = [...manualQuestions];
+    const scoreVal = Math.max(0, Math.min(100, value));
+    updated[qi] = { 
+      ...updated[qi], 
+      questionScore: scoreVal,
+      score: scoreVal,
+      question_score: scoreVal 
+    };
+    setManualQuestions(updated);
+  };
+
   if (!inspectCandidate) return null;
 
   return (
@@ -249,10 +354,17 @@ export default function SuperadminCandidateInspector({
                 return (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                     
-                    {/* Video player and general details */}
+                    {/* Left Column: Video stream, Score slider and Coaching Summary editable box */}
                     <div className="space-y-6">
                       <div className="space-y-2">
-                        <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider block">Candidate Stream Presentation Recording</span>
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider block">Candidate Stream Presentation Recording</span>
+                          {readiness.status === 'PENDING_REVIEW' && (
+                            <span className="bg-amber-500/15 text-amber-500 border border-amber-500/30 text-[9px] font-bold px-2 py-0.5 rounded uppercase font-mono animate-pulse">
+                              Awaiting Review & Rating
+                            </span>
+                          )}
+                        </div>
                         <div className="aspect-video bg-black rounded-2xl overflow-hidden border border-slate-800 relative shadow-lg">
                           <video 
                             controls 
@@ -263,46 +375,130 @@ export default function SuperadminCandidateInspector({
                         </div>
                       </div>
 
-                      <div className="p-5 bg-slate-950/40 rounded-2xl border border-slate-855 space-y-2.5">
+                      {/* Manual Overall Score Modification widget */}
+                      <div className="p-5 bg-slate-950/60 rounded-2xl border border-slate-850 space-y-3">
                         <div className="flex justify-between items-center font-mono">
-                          <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Overall Readiness Quotient</span>
+                          <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1">
+                            <Award className="w-3.5 h-3.5 text-amber-500" /> Overall Readiness Quotient
+                          </span>
                           <span className={`text-sm font-bold px-2.5 py-0.5 rounded border ${scoresColor}`}>
-                            {readiness.score}% Rating
+                            {manualScore}% Assigned
                           </span>
                         </div>
-                        <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                        <div className="flex items-center gap-4">
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max="100" 
+                            className="w-full h-2 bg-slate-900 rounded-lg appearance-none cursor-pointer accent-[#7145FF] border border-slate-800"
+                            value={manualScore}
+                            onChange={(e) => setManualScore(Number(e.target.value))}
+                          />
+                          <input 
+                            type="number"
+                            min="0"
+                            max="100"
+                            className="w-16 bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-center text-xs font-mono font-bold text-white focus:outline-none focus:border-[#7145FF]"
+                            value={manualScore}
+                            onChange={(e) => setManualScore(Math.max(0, Math.min(100, Number(e.target.value))))}
+                          />
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
                           <div 
                             className="h-full bg-gradient-to-r from-[#7145FF] to-indigo-500 transition-all duration-300" 
-                            style={{ width: `${readiness.score}%` }}
+                            style={{ width: `${manualScore}%` }}
                           />
                         </div>
                       </div>
 
                       {/* Recruiter Coaching Comment */}
-                      <div className="p-5 bg-[#7145FF]/5 rounded-2xl border border-[#7145FF]/15 space-y-2">
-                        <span className="text-[10px] font-mono font-bold text-violet-400 uppercase tracking-widest block">AI Evaluator / Recruiter Coaching Feedback</span>
-                        <p className="text-xs text-slate-300 leading-relaxed font-sans">{readiness.feedback || 'Coaching diagnostics pending evaluation.'}</p>
+                      <div className="p-5 bg-[#7145FF]/5 rounded-2xl border border-[#7145FF]/15 space-y-3">
+                        <span className="text-[10px] font-mono font-bold text-violet-400 uppercase tracking-widest block">Recruiter Executive Summary & Coaching Feedback</span>
+                        <textarea
+                          className="w-full h-28 bg-slate-900/80 border border-slate-800/80 rounded-xl p-3 text-xs focus:outline-none focus:border-[#7145FF] text-slate-200 leading-relaxed font-sans placeholder-slate-500"
+                          value={manualFeedback}
+                          onChange={(e) => setManualFeedback(e.target.value)}
+                          placeholder="Type manual review summary, evaluation rationale & candidate coaching notes here..."
+                          rows={4}
+                        />
                       </div>
                     </div>
 
-                    {/* Answers and speech transcripts */}
-                    <div className="space-y-4">
-                      <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest block border-b border-slate-800/80 pb-2">Readiness Speech Transcripts ({parsedQuestions.length})</span>
-                      <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
-                        {parsedQuestions.map((q: any, qi: number) => (
-                          <div key={q.id || qi} className="p-4 bg-slate-950/40 border border-slate-850 rounded-2xl space-y-3 text-xs animate-fade-in">
-                            <div className="flex justify-between items-center bg-slate-950/80 p-2.5 rounded-xl border border-slate-850 font-semibold text-slate-200">
-                              <span>Q0{q.id || qi + 1}: {q.title}</span>
-                              <span className="text-[10px] font-mono text-[#a385ff] font-extrabold uppercase bg-[#7145FF]/10 px-2.5 py-0.5 border border-[#7145FF]/20 rounded-full">
-                                {q.questionScore || q.score || q.question_score || 0}% Score
-                              </span>
-                            </div>
-                            <p className="italic text-slate-350 leading-relaxed p-3 bg-slate-100/5 border border-slate-800/60 rounded-xl leading-relaxed">
-                              &ldquo;{q.transcript || 'No transcript generated for this response.'}&rdquo;
-                            </p>
-                          </div>
-                        ))}
+                    {/* Right Column: Answers, Speech transcripts, and Question scores */}
+                    <div className="space-y-4 flex flex-col max-h-[85vh] overflow-y-auto pr-2 custom-scrollbar">
+                      <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest block">Editable Speech Transcripts & Question Ratings ({manualQuestions.length})</span>
+                        <span className="text-[9px] text-slate-400">Click text below to correct speech transcripts</span>
                       </div>
+                      
+                      <div className="space-y-4 pr-1">
+                        {manualQuestions.map((q: any, qi: number) => {
+                          const qScore = q.questionScore ?? q.score ?? q.question_score ?? 0;
+                          return (
+                            <div key={q.id || qi} className="p-4 bg-slate-950/40 border border-slate-850 rounded-2xl space-y-3 text-xs animate-fade-in">
+                              <div className="flex justify-between items-center bg-slate-950/80 p-2.5 rounded-xl border border-slate-850 font-semibold text-slate-200 gap-2">
+                                <span className="truncate">Q0{q.id || qi + 1}: {q.title}</span>
+                                <div className="flex items-center gap-2 shrink-0 animate-fade-in">
+                                  <span className="text-[10px] font-mono font-bold text-slate-405">Score:</span>
+                                  <input 
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    className="w-12 bg-slate-900 border border-slate-850 rounded-lg py-1 px-1.5 text-center text-[10px] font-mono font-bold text-[#a385ff] focus:outline-none focus:border-[#7145FF]"
+                                    value={qScore}
+                                    onChange={(e) => handleQuestionScoreChange(qi, Number(e.target.value))}
+                                  />
+                                  <span className="text-[#a385ff] text-[10px] font-mono">%</span>
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <span className="text-[9px] font-mono font-bold text-slate-500 uppercase tracking-widest block font-sans">Corrected Speech Transcript:</span>
+                                <textarea
+                                  className="w-full bg-slate-900/60 border border-slate-800/60 rounded-xl p-2.5 text-xs text-slate-300 focus:outline-none focus:border-[#7145FF] transition-all leading-relaxed placeholder-slate-505 font-sans"
+                                  value={q.transcript || ''}
+                                  onChange={(e) => handleQuestionTranscriptChange(qi, e.target.value)}
+                                  placeholder="No transcript generated for this response. Add manual transcription or notes here..."
+                                  rows={2}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Scoring Actions and submit state indications */}
+                      <div className="pt-4 border-t border-slate-800 space-y-3 shrink-0">
+                        {submitError && (
+                          <div className="p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400 font-medium font-sans">
+                            ⚠️ {submitError}
+                          </div>
+                        )}
+                        {submitSuccess && (
+                          <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-400 font-bold flex items-center gap-2 font-sans">
+                            <Check className="w-4 h-4 text-emerald-400 shrink-0 animate-scale-in" /> Evaluation Successfully Approved & Published!
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={handleSaveGrades}
+                            disabled={isSubmitting}
+                            className="flex-1 bg-[#7145FF] hover:bg-[#5b32e6] disabled:bg-slate-800 text-white p-3.5 rounded-xl text-xs font-extrabold uppercase tracking-widest transition shadow-lg shadow-[#7145FF]/10 cursor-pointer flex items-center justify-center gap-2 font-mono"
+                          >
+                            {isSubmitting ? (
+                              <>
+                                <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" />
+                                Publishing Grades...
+                              </>
+                            ) : (
+                              <>
+                                <Save className="w-4 h-4" /> Save Score & Approve Interview
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
                     </div>
 
                   </div>

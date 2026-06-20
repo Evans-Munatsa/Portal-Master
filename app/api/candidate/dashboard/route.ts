@@ -127,6 +127,10 @@ export async function GET() {
       });
     }
 
+    if (user) {
+      (user as any).realRole = session.realRole;
+    }
+
     return NextResponse.json({ user, matches, savedJobs, applications, allJobs, readinessInterview });
   } catch (error) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

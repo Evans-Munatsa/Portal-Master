@@ -2,7 +2,6 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { POPIAConsent } from "@/components/POPIAConsent";
 import { ToastProvider } from "@/components/ToastNotification";
-import { ThanosSwitcher } from "@/components/ThanosSwitcher";
 import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -44,7 +43,6 @@ export default function RootLayout({
           <ToastProvider>
             {children}
             <POPIAConsent />
-            <ThanosSwitcher />
           </ToastProvider>
         </ThemeProvider>
       </body>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import LaunchPathLogo from '@/components/LaunchPathLogo';
+import { ThanosSidebarWidget } from '@/components/ThanosSidebarWidget';
 import { 
   ShieldAlert, 
   Users, 
@@ -22,7 +23,8 @@ import {
   ArrowRight, 
   Search, 
   Sliders, 
-  MapPin 
+  MapPin,
+  Video
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
@@ -357,7 +359,7 @@ export default function SuperadminDashboard({
     <div className="w-full h-screen bg-slate-900 flex overflow-hidden font-sans text-slate-300">
       
       {/* Sidebar navigation aligned with LaunchPath brand style guide */}
-      <aside className="w-70 bg-slate-950 border-r border-slate-800 flex-shrink-0 flex flex-col hidden md:flex">
+      <aside className="w-64 bg-slate-950 border-r border-slate-800 flex-shrink-0 flex flex-col hidden md:flex">
         <div className="p-6">
           <div className="flex flex-col items-start gap-4 mb-8">
             <LaunchPathLogo variant="full" textColor="text-white" />
@@ -442,6 +444,10 @@ export default function SuperadminDashboard({
           </nav>
         </div>
 
+        <div className="px-2">
+          <ThanosSidebarWidget currentRole="SUPERADMIN" />
+        </div>
+
         <div className="mt-auto p-4 border-t border-slate-800">
           <div className="flex items-center justify-between gap-3 group">
             <div className="flex items-center gap-3 overflow-hidden">
@@ -515,8 +521,31 @@ export default function SuperadminDashboard({
                 </div>
               </div>
 
+              {/* VIDEO INTERVIEWS PENDING REVIEW STATUS ALERT BANNER */}
+              {stats?.pendingVideoInterviewsCount > 0 && (
+                <div role="alert" className="p-5 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-scale-in">
+                  <div className="flex gap-3">
+                    <div className="bg-amber-500/20 text-amber-500 p-2.5 rounded-xl shrink-0 flex items-center justify-center">
+                      <Video className="w-5 h-5 text-amber-550 animate-pulse" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white text-sm">Action Required: Video Interviews Pending Review</h4>
+                      <p className="text-xs text-amber-500/90 mt-0.5 font-medium">
+                        There are {stats.pendingVideoInterviewsCount} candidate video recording submissions awaiting manual grading, coaching comments, and overall rating alignment.
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleTabChange('Talent')}
+                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-colors shrink-0 cursor-pointer shadow-lg shadow-amber-500/10"
+                  >
+                    Go to Review Console →
+                  </button>
+                </div>
+              )}
+
               {/* Stats Block */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
                 <div className="bg-slate-950/60 border border-slate-850 p-5 rounded-2xl shadow-sm animate-fade-in">
                   <p className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest mb-1.5 font-sans">Registered Candidates</p>
                   <p className="text-3xl font-black text-white font-mono">{stats?.totalCandidates || 0}</p>
@@ -528,6 +557,12 @@ export default function SuperadminDashboard({
                 <div className="bg-slate-950/60 border border-slate-850 p-5 rounded-2xl shadow-sm animate-fade-in">
                   <p className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest mb-1.5 font-sans">Total Open Job Posts</p>
                   <p className="text-3xl font-black text-[#7145FF] font-mono">{stats?.totalJobs || 0}</p>
+                </div>
+                <div className="bg-amber-500/5 border border-amber-500/20 p-5 rounded-2xl shadow-sm animate-fade-in">
+                  <p className="text-[10px] font-mono font-bold text-amber-550 uppercase tracking-widest mb-1.5 font-sans">Videos Waiting Review</p>
+                  <p className={`text-3xl font-black font-mono ${stats?.pendingVideoInterviewsCount > 0 ? 'text-amber-500 animate-pulse' : 'text-slate-400'}`}>
+                    {stats?.pendingVideoInterviewsCount || 0}
+                  </p>
                 </div>
                 <div className="bg-slate-950/60 border border-slate-850 p-5 rounded-2xl shadow-sm animate-fade-in">
                   <p className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest mb-1.5 font-sans">Placement Success Rate</p>
@@ -1027,7 +1062,14 @@ export default function SuperadminDashboard({
                       <tr key={c.id} className="hover:bg-[#7145FF]/5 transition-colors">
                         <td className="px-6 py-4 text-xs font-mono text-slate-600">#{c.id}</td>
                         <td className="px-6 py-4 font-sans">
-                          <p className="font-bold text-white text-sm">{c.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold text-white text-sm">{c.name}</p>
+                            {c.video_interviews?.[0]?.status === 'PENDING_REVIEW' && (
+                              <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full uppercase animate-pulse">
+                                Pending Video
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-slate-450 font-mono">{c.email}</p>
                         </td>
                         <td className="px-6 py-4 font-sans">
@@ -1049,13 +1091,23 @@ export default function SuperadminDashboard({
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center gap-2 justify-end font-sans">
-                            <button 
-                              onClick={() => { setInspectCandidate(c); setInspectTab('profile'); }}
-                              className="text-xs bg-[#7145FF]/10 hover:bg-[#7145FF]/20 text-[#a385ff] px-3.5 py-1.5 rounded-xl border border-[#7145FF]/20 flex items-center gap-1 cursor-pointer transition font-mono"
-                              title="Inspect Candidate Show Page"
-                            >
-                              <Eye className="w-3.5 h-3.5 text-[#a385ff]" /> INSPECT PROFILE
-                            </button>
+                            {c.video_interviews?.[0]?.status === 'PENDING_REVIEW' ? (
+                              <button 
+                                onClick={() => { setInspectCandidate(c); setInspectTab('video'); }}
+                                className="text-xs bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 px-3.5 py-1.5 rounded-xl border border-amber-500/25 flex items-center gap-1 cursor-pointer transition font-mono animate-pulse"
+                                title="Review Pending Candidate Video Interview"
+                              >
+                                <Video className="w-3.5 h-3.5 text-amber-500" /> REVIEW VIDEO
+                              </button>
+                            ) : (
+                              <button 
+                                onClick={() => { setInspectCandidate(c); setInspectTab('profile'); }}
+                                className="text-xs bg-[#7145FF]/10 hover:bg-[#7145FF]/20 text-[#a385ff] px-3.5 py-1.5 rounded-xl border border-[#7145FF]/20 flex items-center gap-1 cursor-pointer transition font-mono"
+                                title="Inspect Candidate Show Page"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-[#a385ff]" /> INSPECT PROFILE
+                              </button>
+                            )}
                             <button 
                               onClick={() => openCandEdit(c)}
                               className="p-1.5 hover:bg-[#7145FF]/20 text-[#a385ff] rounded-lg border border-[#7145FF]/10 hover:border-[#7145FF]/30 transition cursor-pointer"
@@ -1347,6 +1399,7 @@ export default function SuperadminDashboard({
         inspectTab={inspectTab}
         setInspectTab={setInspectTab}
         interviews={interviews}
+        onRefresh={onRefresh}
       />
 
       {/* POPUP 2: JOB MODAL */}

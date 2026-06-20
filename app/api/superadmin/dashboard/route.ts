@@ -156,6 +156,10 @@ export async function GET() {
       ? Math.round((successfulApps / totalApps) * 100) 
       : 0;
 
+    const pendingVideoInterviewsCount = await db.videoInterview.count({
+      where: { status: 'PENDING_REVIEW' }
+    });
+
     return NextResponse.json({
       user: { role: 'SUPERADMIN', name: 'System Administrator' },
       candidates,
@@ -171,6 +175,7 @@ export async function GET() {
         totalMatches: matches.length,
         totalApplications: totalApps,
         totalInterviews: interviews.length,
+        pendingVideoInterviewsCount,
         successRate,
         averageMatchScore: matches.length > 0 
           ? Math.round(matches.reduce((acc, m) => acc + m.match_score, 0) / matches.length) 

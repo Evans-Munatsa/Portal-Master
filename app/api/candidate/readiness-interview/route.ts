@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
     const { answers, videoBase64 } = await req.json();
 
-    // Fetch user details for richer Gemini evaluation context
+    // Fetch user details for richer manual review context
     const user = await db.user.findUnique({
       where: { id: session.userId },
       select: {
@@ -50,77 +50,47 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Candidate profile not found' }, { status: 404 });
     }
 
-    const prompt = `
-      You are an expert executive coach and senior recruiting evaluator. 
-      You are assessing a candidate's timed job readiness oral interview.
-      
-      Candidate Profile:
-      - Name: ${user.name || 'N/A'}
-      - Target Title: ${user.professional_title || 'N/A'}
-      - Experience level: ${user.experience_level || 'N/A'}
-      - Resume/Skills context: ${user.resume_text || 'N/A'}
-
-      Interview details:
-      The candidate was recorded answering 4 questions.
-      User answers summary or prompt keywords provided:
-      ${JSON.stringify(answers)}
-
-      Based on their profile and responses, evaluate their oral job readiness:
-      1. Calculate an overall readiness score from 0 to 100.
-      2. Provide a 3-paragraph executive coaching summary with core strengths and actionable development ideas.
-      3. Generate a realistic and professional spoken response transcript (approx 100-150 words) for each answered question, reflecting what a high-caliber professional with their background would say to fully hit the criteria.
-      4. Give bulleted concise coaching points and a score for each individual question response.
-
-      Return the result strictly as a JSON object matching the requested schema.
-    `;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            score: {
-              type: Type.INTEGER,
-              description: "Overall recruitment readiness score out of 100."
-            },
-            feedback: {
-              type: Type.STRING,
-              description: "Detailed 2-3 paragraph coaching and performance evaluation feedback text."
-            },
-            questionsResponse: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  id: { type: Type.INTEGER },
-                  title: { type: Type.STRING },
-                  transcript: { type: Type.STRING, description: "A realistic oral response transcript spoken professionally by the candidate." },
-                  questionScore: { type: Type.INTEGER },
-                  points: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Coaching feedback bullets for this specific question response." }
-                },
-                required: ["id", "title", "transcript", "questionScore", "points"]
-              }
-            }
-          },
-          required: ["score", "feedback", "questionsResponse"]
-        }
+    // Default structure for the standard interview questions, ready for Superadmin manual review
+    const baseQuestions = [
+      {
+        id: 1,
+        title: 'Value Proposition & Background',
+        transcript: 'Video recorded. Awaiting manual transcription by Super Admin.',
+        questionScore: 0,
+        points: ['Pending manual evaluation']
+      },
+      {
+        id: 2,
+        title: 'Technical Execution & Resilience',
+        transcript: 'Video recorded. Awaiting manual transcription by Super Admin.',
+        questionScore: 0,
+        points: ['Pending manual evaluation']
+      },
+      {
+        id: 3,
+        title: 'Adversity & Collaborative Leadership',
+        transcript: 'Video recorded. Awaiting manual transcription by Super Admin.',
+        questionScore: 0,
+        points: ['Pending manual evaluation']
+      },
+      {
+        id: 4,
+        title: 'Career Trajectory & Growth Mindset',
+        transcript: 'Video recorded. Awaiting manual transcription by Super Admin.',
+        questionScore: 0,
+        points: ['Pending manual evaluation']
       }
-    });
+    ];
 
-    const parsedEvaluations = JSON.parse(response.text || '{}');
-
-    // Store in database
+    // Store in database as PENDING_REVIEW with 0 score
     const createdInterview = await db.videoInterview.create({
       data: {
         candidate_id: session.userId,
         video_url: videoBase64 || '', // store a base64 recording clip or visual context
-        questions: JSON.stringify(parsedEvaluations.questionsResponse),
-        score: parsedEvaluations.score || 75,
-        feedback: parsedEvaluations.feedback || '',
-        status: 'COMPLETED'
+        questions: JSON.stringify(baseQuestions),
+        score: 0,
+        feedback: 'Your recorded video interview is pending manual review and scoring by a Super Admin.',
+        status: 'PENDING_REVIEW'
       }
     });
 

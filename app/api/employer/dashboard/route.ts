@@ -66,6 +66,10 @@ export async function GET() {
       })
     );
 
+    if (user) {
+      (user as any).realRole = session.realRole;
+    }
+
     return NextResponse.json({
       user,
       jobs: myJobs,
