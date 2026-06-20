@@ -4,6 +4,7 @@ import { POPIAConsent } from "@/components/POPIAConsent";
 import { ToastProvider } from "@/components/ToastNotification";
 import { ThanosSwitcher } from "@/components/ThanosSwitcher";
 import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -36,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
       <body>
+        <Analytics />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <ToastProvider>
             {children}
