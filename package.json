@@ -18,6 +18,7 @@
     "@tiptap/starter-kit": "^3.25.0",
     "@types/bcrypt": "^6.0.0",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.78.0",
     "clsx": "^2.1.1",
