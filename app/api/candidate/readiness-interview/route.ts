@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { GoogleGenAI, Type } from '@google/genai';
+import Mux from '@mux/mux-node';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+const MUX_TOKEN_ID = process.env.MUX_TOKEN_ID;
+const MUX_TOKEN_SECRET = process.env.MUX_TOKEN_SECRET;
 
 // Get candidate's current readiness interview results
 export async function GET() {
@@ -33,7 +37,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { answers, videoBase64 } = await req.json();
+    const { answers, videoBase64, muxUploadId } = await req.json();
 
     // Fetch user details for richer manual review context
     const user = await db.user.findUnique({
@@ -48,6 +52,35 @@ export async function POST(req: Request) {
 
     if (!user) {
       return NextResponse.json({ error: 'Candidate profile not found' }, { status: 404 });
+    }
+
+    // Resolve final video URL/playback ID
+    let finalVideoUrl = videoBase64 || '';
+
+    if (muxUploadId) {
+      if (muxUploadId.startsWith('mock_upload_')) {
+        // Mock Mux Upload - generate a simulated mock playback ID
+        const mockPlaybackId = `mock_playback_${Math.random().toString(36).substring(2)}`;
+        finalVideoUrl = `mux://${mockPlaybackId}`;
+      } else if (MUX_TOKEN_ID && MUX_TOKEN_SECRET) {
+        // Real Mux Upload - try resolving Playback ID
+        try {
+          const mux = new Mux({
+            tokenId: MUX_TOKEN_ID,
+            tokenSecret: MUX_TOKEN_SECRET,
+          });
+          const uploadInfo = await mux.video.uploads.retrieve(muxUploadId);
+          if (uploadInfo && uploadInfo.asset_id) {
+            const assetInfo = await mux.video.assets.retrieve(uploadInfo.asset_id);
+            if (assetInfo && assetInfo.playback_ids && assetInfo.playback_ids.length > 0) {
+              const playbackId = assetInfo.playback_ids[0].id;
+              finalVideoUrl = `mux://${playbackId}`;
+            }
+          }
+        } catch (muxError: any) {
+          console.error('[MUX ERROR] Error resolving Mux upload ID:', muxError);
+        }
+      }
     }
 
     // Default structure for the standard interview questions, ready for Superadmin manual review
@@ -86,7 +119,7 @@ export async function POST(req: Request) {
     const createdInterview = await db.videoInterview.create({
       data: {
         candidate_id: session.userId,
-        video_url: videoBase64 || '', // store a base64 recording clip or visual context
+        video_url: finalVideoUrl, 
         questions: JSON.stringify(baseQuestions),
         score: 0,
         feedback: 'Your recorded video interview is pending manual review and scoring by a Super Admin.',

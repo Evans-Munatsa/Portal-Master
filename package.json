@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@google/genai": "^2.8.0",
+    "@mux/mux-node": "^14.1.1",
     "@prisma/client": "^6.0.0",
     "@sendgrid/mail": "^8.1.6",
     "@tailwindcss/typography": "^0.5.19",

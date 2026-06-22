@@ -39,9 +39,7 @@ export default function ReadinessInterviewPage() {
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60); // 60 seconds per question
   const [isRecording, setIsRecording] = useState(false);
-  const [isRecordingStarted, setIsRecordingStarted] = useState(false);
   const [cameraPermission, setCameraPermission] = useState<'pending' | 'granted' | 'denied'>('pending');
-  const [isFetchingInitial, setIsFetchingInitial] = useState(true);
   
   // Media streams
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -52,28 +50,6 @@ export default function ReadinessInterviewPage() {
   const [evaluationResult, setEvaluationResult] = useState<any>(null);
   const [finishedActiveIdx, setFinishedActiveIdx] = useState<number>(0);
   const [isReevaluating, setIsReevaluating] = useState(false);
-  const [questionSeconds, setQuestionSeconds] = useState<Record<number, number>>({});
-
-  // Fetch initial existing readiness interview from DB
-  useEffect(() => {
-    async function loadInitial() {
-      try {
-        const res = await fetch('/api/candidate/readiness-interview');
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.interview) {
-            setEvaluationResult(data.interview);
-            setStep('finished');
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching initial interview:', err);
-      } finally {
-        setIsFetchingInitial(false);
-      }
-    }
-    loadInitial();
-  }, []);
 
   const handleReevaluate = async (questionId: number) => {
     if (!evaluationResult?.id) return;
@@ -106,9 +82,6 @@ export default function ReadinessInterviewPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const allBlobsRef = useRef<{ questionIdx: number; blob: Blob }[]>([]);
-  const singleRecorderRef = useRef<MediaRecorder | null>(null);
-  const singleChunksRef = useRef<Blob[]>([]);
-  const fullBlobRef = useRef<Blob | null>(null);
 
   // Clean raw media stream on unmount
   useEffect(() => {
@@ -165,57 +138,21 @@ export default function ReadinessInterviewPage() {
     setCurrentQuestionIdx(0);
     // Clear previously cached blobs
     allBlobsRef.current = [];
-    singleRecorderRef.current = null;
-    singleChunksRef.current = [];
-    fullBlobRef.current = null;
-    setQuestionSeconds({});
-    prepareQuestion(0);
+    startQuestion(0, activeStream);
   };
 
-  const prepareQuestion = (idx: number) => {
-    setIsRecordingStarted(false);
+  const startQuestion = (idx: number, activeStream?: MediaStream | null) => {
     setTimeLeft(60);
     setRecordedChunks([]);
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
-    }
-  };
-
-  const startRecordingCurrentQuestion = (activeStream?: MediaStream | null) => {
+    
     const targetStream = activeStream !== undefined ? activeStream : stream;
     const isGranted = activeStream !== undefined ? (activeStream !== null) : (cameraPermission === 'granted');
     
-    setIsRecordingStarted(true);
-    setTimeLeft(60);
-    setRecordedChunks([]);
-
     // Setup and start MediaRecorder if stream is available
     if (targetStream && isGranted) {
       try {
-        // 1. Maintain a single overall high-quality continuous session video recorder
-        if (!singleRecorderRef.current) {
-          singleChunksRef.current = [];
-          const sr = new MediaRecorder(targetStream, { mimeType: 'video/webm' });
-          sr.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-              singleChunksRef.current.push(event.data);
-            }
-          };
-          sr.onstop = () => {
-            const finalBlob = new Blob(singleChunksRef.current, { type: 'video/webm' });
-            fullBlobRef.current = finalBlob;
-          };
-          sr.start(1000); // 1-second timeslices ensure correct metadata encoding
-          singleRecorderRef.current = sr;
-        } else if (singleRecorderRef.current.state === 'paused') {
-          singleRecorderRef.current.resume();
-        }
-
-        // 2. Maintain a separate segment recorder for immediate offline question-specific tabs preview
         const recorder = new MediaRecorder(targetStream, { mimeType: 'video/webm' });
         const chunks: Blob[] = [];
-        const idx = currentQuestionIdx;
         recorder.ondataavailable = (event) => {
           if (event.data.size > 0) chunks.push(event.data);
         };
@@ -235,7 +172,7 @@ export default function ReadinessInterviewPage() {
             { questionIdx: idx, blob: mainBlob }
           ].sort((a, b) => a.questionIdx - b.questionIdx);
         };
-        recorder.start(1000); // 1-second timeslices
+        recorder.start();
         setMediaRecorder(recorder);
         setIsRecording(true);
       } catch (err) {
@@ -250,10 +187,7 @@ export default function ReadinessInterviewPage() {
     timerIntervalRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          if (timerIntervalRef.current) {
-            clearInterval(timerIntervalRef.current);
-            timerIntervalRef.current = null;
-          }
+          clearInterval(timerIntervalRef.current!);
           // Auto move to next question or submit
           handleNextOrSubmit();
           return 0;
@@ -264,68 +198,34 @@ export default function ReadinessInterviewPage() {
   };
 
   const handleNextOrSubmit = async () => {
-    // Record actual question elapsed duration
-    const elapsed = 60 - timeLeft;
-    const finalElapsed = elapsed <= 0 ? 1 : (elapsed > 60 ? 60 : elapsed);
-    setQuestionSeconds(prev => ({
-      ...prev,
-      [currentQuestionIdx]: finalElapsed
-    }));
-
-    // Stop recording current chunk if we were recording
-    if (isRecordingStarted) {
-      if (singleRecorderRef.current && singleRecorderRef.current.state === 'recording') {
-        singleRecorderRef.current.pause();
-      }
-
-      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        const activeRecorder = mediaRecorder;
-        const originalOnStop = activeRecorder.onstop;
-        
-        const awaitStopPromise = new Promise<void>((resolve) => {
-          activeRecorder.onstop = () => {
-            if (originalOnStop) {
-              // @ts-ignore
-              originalOnStop();
-            }
-            resolve();
-          };
-        });
-        
-        activeRecorder.stop();
-        await awaitStopPromise;
-      } else {
-        // Small sleep to ensure event loops catch up if needed
-        await new Promise(resolve => setTimeout(resolve, 150));
-      }
-    }
-
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
+    // Stop recording current chunk and await onstop execution path to guarantee blob caching
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      const activeRecorder = mediaRecorder;
+      const originalOnStop = activeRecorder.onstop;
+      
+      const awaitStopPromise = new Promise<void>((resolve) => {
+        activeRecorder.onstop = () => {
+          if (originalOnStop) {
+            // @ts-ignore
+            originalOnStop();
+          }
+          resolve();
+        };
+      });
+      
+      activeRecorder.stop();
+      await awaitStopPromise;
+    } else {
+      // Small sleep to ensure event loops catch up if needed
+      await new Promise(resolve => setTimeout(resolve, 150));
     }
 
     if (currentQuestionIdx < QUESTIONS.length - 1) {
       const nextIdx = currentQuestionIdx + 1;
       setCurrentQuestionIdx(nextIdx);
-      prepareQuestion(nextIdx);
+      startQuestion(nextIdx);
     } else {
-      // Completed all questions - gracefully stop the main session recording
-      if (singleRecorderRef.current && singleRecorderRef.current.state !== 'inactive') {
-        const sr = singleRecorderRef.current;
-        const awaitSrStop = new Promise<void>((resolve) => {
-          const originalOnStop = sr.onstop;
-          sr.onstop = () => {
-            if (originalOnStop) {
-              // @ts-ignore
-              originalOnStop();
-            }
-            resolve();
-          };
-        });
-        sr.stop();
-        await awaitSrStop;
-      }
+      // Completed all questions
       submitInterviewData();
     }
   };
@@ -335,20 +235,16 @@ export default function ReadinessInterviewPage() {
     setIsRecording(false);
     setStep('uploading');
 
-    // Wait for the continuous session recording stop sequence to finish converting compilation refs
-    let attempts = 0;
-    while (!fullBlobRef.current && attempts < 15) {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      attempts++;
-    }
-
-    // Capture the unified multi-question continuous session video or segments backup
-    const finalBlobToUpload = fullBlobRef.current || new Blob(allBlobsRef.current.map(item => item.blob), { type: 'video/webm' });
-    let finalVideoUrl = URL.createObjectURL(finalBlobToUpload);
-    setSavedVideosUrl(finalVideoUrl);
+    // Compile segment blobs consecutively into a single high-quality WebM container file
+    const blobsToCompile = allBlobsRef.current.map(item => item.blob);
+    let finalVideoUrl = '';
     let uploadedMuxId = '';
 
-    if (finalBlobToUpload.size > 0) {
+    if (blobsToCompile.length > 0) {
+      const compiledBlob = new Blob(blobsToCompile, { type: 'video/webm' });
+      finalVideoUrl = URL.createObjectURL(compiledBlob);
+      setSavedVideosUrl(finalVideoUrl);
+
       try {
         // 1. Fetch secure direct Mux upload token/URL from route
         const muxRes = await fetch('/api/candidate/readiness-interview/mux-upload', {
@@ -364,7 +260,7 @@ export default function ReadinessInterviewPage() {
         // 2. Perform raw streaming binary upload directly to Mux endpoints (completely offloading local server RAM!)
         const putRes = await fetch(uploadUrl, {
           method: 'PUT',
-          body: finalBlobToUpload,
+          body: compiledBlob,
           headers: {
             'Content-Type': 'video/webm'
           }
@@ -385,15 +281,15 @@ export default function ReadinessInterviewPage() {
     }
 
     try {
-      // Prepare simulated/extracted details to submit for AI evaluation with genuine durations
+      // Prepare simulated/extracted details to submit for AI evaluation
       const res = await fetch('/api/candidate/readiness-interview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          answers: QUESTIONS.map((q, idx) => ({
+          answers: QUESTIONS.map(q => ({
             id: q.id,
             title: q.title,
-            recordedTime: questionSeconds[idx] || 60,
+            recordedTime: 60,
           })),
           muxUploadId: uploadedMuxId,
           videoBase64: finalVideoUrl || 'https://assets.mixkit.co/videos/preview/mixkit-man-delivering-presentation-on-a-screen-40331-large.mp4' // Fallback preview reference
@@ -442,17 +338,8 @@ export default function ReadinessInterviewPage() {
       {/* Main workspace container */}
       <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
         
-        {isFetchingInitial ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center space-y-4">
-            <div className="w-12 h-12 rounded-full border-4 border-slate-800/80 border-t-[#7145FF] animate-spin" />
-            <p className="text-xs font-mono text-slate-400 uppercase tracking-widest animate-pulse">
-              Securing interview sandbox session...
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* STEP 1: INTRO SCREEN */}
-            {step === 'intro' && (
+        {/* STEP 1: INTRO SCREEN */}
+        {step === 'intro' && (
           <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-8 max-w-2xl mx-auto space-y-6 shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-300">
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#7145FF]/5 rounded-full blur-3xl pointer-events-none"></div>
             
@@ -537,29 +424,18 @@ export default function ReadinessInterviewPage() {
               
               <div className="flex justify-between items-center pb-2">
                 <div className="flex items-center gap-2">
-                  {isRecordingStarted ? (
-                    <>
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
-                      </span>
-                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-350 animate-pulse">
-                        Live Recording
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="relative flex h-2.5 w-2.5 rounded-full bg-amber-500"></span>
-                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-400">
-                        Camera Ready (Standing By)
-                      </span>
-                    </>
-                  )}
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+                  </span>
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-350">
+                    Live Recording
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg font-mono text-xs text-slate-400">
                   <Timer className="w-3.5 h-3.5 text-[#7145FF]" />
-                  <span className={isRecordingStarted && timeLeft <= 10 ? 'text-red-400 font-extrabold animate-pulse' : ''}>
+                  <span className={timeLeft <= 10 ? 'text-red-400 font-extrabold animate-pulse' : ''}>
                     00:{timeLeft.toString().padStart(2, '0')}
                   </span>
                 </div>
@@ -613,37 +489,22 @@ export default function ReadinessInterviewPage() {
               <div className="space-y-4">
                 <div className="bg-slate-950 border border-slate-850 rounded-xl p-3 text-[10.5px] leading-relaxed text-slate-500 font-medium">
                   <div className="flex items-center gap-1.5 font-bold text-slate-400 mb-1 font-mono uppercase text-[9.5px]">
-                    <Mic className="w-3.5 h-3.5 text-[#7145FF]" /> Tips for candidates
+                    <Mic className="w-3.5 h-3.5 text-blue-400" /> Tips for candidates
                   </div>
-                  {isRecordingStarted 
-                    ? "Recording is live. Please continue speaking naturally or click the button below to complete early."
-                    : "Read the question carefully. Formulate your answer, then click 'Start Recording Answer' below to initiate the active response."}
+                  Keep speaking naturally until the time limit completes or press next when finished to save progress.
                 </div>
 
-                {!isRecordingStarted ? (
-                  <button
-                    onClick={() => startRecordingCurrentQuestion()}
-                    className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-xl transition flex items-center justify-center gap-2 text-sm cursor-pointer shadow-emerald-500/20 shadow-lg"
-                    id="start-recording-btn"
-                  >
-                    <Video className="w-4 h-4 text-emerald-100" />
-                    <span>Start Recording Answer</span>
-                    <ChevronRight className="w-4 h-4 text-emerald-100" />
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleNextOrSubmit}
-                    className="w-full py-3.5 bg-[#7145FF] hover:bg-[#5b32e6] text-white font-extrabold rounded-xl transition flex items-center justify-center gap-2 text-sm cursor-pointer shadow-[#7145FF]/20 shadow-lg"
-                    id="next-question-btn"
-                  >
-                    <span>
-                      {currentQuestionIdx < QUESTIONS.length - 1 
-                        ? `Save & Continue to Question 0${currentQuestionIdx + 2}` 
-                        : 'Finish & Compile Video Interview'}
-                    </span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                )}
+                <button
+                  onClick={handleNextOrSubmit}
+                  className="w-full py-3.5 bg-[#7145FF] hover:bg-[#5b32e6] text-white font-extrabold rounded-xl transition flex items-center justify-center gap-2 text-sm cursor-pointer shadow-[#7145FF]/20 shadow-lg"
+                >
+                  <span>
+                    {currentQuestionIdx < QUESTIONS.length - 1 
+                      ? `Save & Continue to Question 0${currentQuestionIdx + 2}` 
+                      : 'Finish & Compile Video Interview'}
+                  </span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>
@@ -797,12 +658,6 @@ export default function ReadinessInterviewPage() {
                         poster={LAUNCHPATH_POSTER_SVG}
                         className="w-full h-full"
                       />
-                    ) : evaluationResult?.video_url ? (
-                      <LaunchpathMuxPlayer 
-                        videoUrl={evaluationResult.video_url} 
-                        poster={LAUNCHPATH_POSTER_SVG}
-                        className="w-full h-full"
-                      />
                     ) : savedVideosUrl && finishedActiveIdx === QUESTIONS.length - 1 ? (
                       <LaunchpathMuxPlayer 
                         videoUrl={savedVideosUrl} 
@@ -899,29 +754,10 @@ export default function ReadinessInterviewPage() {
             </div>
 
             {/* Actions Footer */}
-            <div className="pt-6 border-t border-slate-850 flex flex-col sm:flex-row justify-between items-center gap-4">
-              <button
-                onClick={() => {
-                  setStep('intro');
-                  setEvaluationResult(null);
-                  setSavedVideosUrl('');
-                  setQuestionVideos({});
-                  singleRecorderRef.current = null;
-                  singleChunksRef.current = [];
-                  fullBlobRef.current = null;
-                  setQuestionSeconds({});
-                }}
-                className="w-full sm:w-auto px-5 py-3 bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 font-extrabold rounded-xl transition text-sm cursor-pointer justify-center flex items-center gap-1.5"
-                id="retake-interview-btn"
-              >
-                <RefreshCw className="w-4 h-4 text-[#7145FF]" />
-                <span>Start New / Retake Interview</span>
-              </button>
-
+            <div className="pt-6 border-t border-slate-850 flex justify-end">
               <button
                 onClick={() => router.push('/candidate/dashboard')}
-                className="w-full sm:w-auto px-5 py-3 bg-[#7145FF] hover:bg-[#5b32e6] text-white font-extrabold rounded-xl transition text-sm cursor-pointer shadow-[#7145FF]/20 shadow-lg justify-center flex items-center gap-1.5"
-                id="return-dashboard-btn"
+                className="px-5 py-3 bg-[#7145FF] hover:bg-[#5b32e6] text-white font-extrabold rounded-xl transition text-sm cursor-pointer shadow-[#7145FF]/20 shadow-lg justify-center flex items-center gap-1.5"
               >
                 <span>Return to Candidate Dashboard</span>
                 <ArrowLeft className="w-4 h-4" />
@@ -930,15 +766,12 @@ export default function ReadinessInterviewPage() {
           </div>
         )}
 
-          </>
-        )}
-
       </main>
 
       {/* Footer copyright */}
       <footer className="border-t border-slate-900 bg-slate-950/40 p-4 text-center z-10">
         <p className="text-[10px] font-mono text-slate-500 tracking-wider">
-          © 2026 LAUNCHPATH TALENT PLATFORM • SECURE COMPLIANCE SANDBOX
+          © 2026 MATCHENGINE TALENT PLATFORM • SECURE COMPLIANCE SANDBOX
         </p>
       </footer>
 
