@@ -21,6 +21,7 @@ export async function GET() {
         resume_text: true,
         linkedin_url: true,
         github_url: true,
+        phone: true,
         video_interviews: {
           select: {
             id: true,

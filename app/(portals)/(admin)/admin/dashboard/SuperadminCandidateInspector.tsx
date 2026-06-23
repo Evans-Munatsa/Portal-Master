@@ -7,6 +7,7 @@ const LAUNCHPATH_POSTER_SVG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDo
 import { 
   X, 
   Mail, 
+  Phone,
   ExternalLink, 
   FileText, 
   Activity, 
@@ -155,11 +156,17 @@ export default function SuperadminCandidateInspector({
                 </span>
               </h2>
               <p className="text-sm font-semibold text-slate-400 mt-0.5">{inspectCandidate.professional_title || 'Software Candidate'}</p>
-              <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-slate-500 w-full">
+              <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-slate-500 w-full animate-fade-in">
                 <span className="flex items-center gap-1 shrink-0">
                   <Mail className="w-3.5 h-3.5 text-slate-500" />
                   {inspectCandidate.email}
                 </span>
+                {inspectCandidate.phone && (
+                  <span className="flex items-center gap-1.5 shrink-0 text-emerald-450 font-medium">
+                    <Phone className="w-3.5 h-3.5 text-emerald-500" />
+                    {inspectCandidate.phone}
+                  </span>
+                )}
                 {inspectCandidate.experience_level && (
                   <span className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-800 border border-slate-700/60 rounded text-slate-300 font-mono text-[10.5px]">
                     EXP: {inspectCandidate.experience_level}

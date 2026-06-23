@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     // 1. CANDIDATE CRUD
     // ==========================================
     if (action === 'CREATE_CANDIDATE') {
-      const { email, password, name, professional_title, experience_level, resume_text, linkedin_url, github_url } = payload;
+      const { email, password, name, professional_title, experience_level, resume_text, linkedin_url, github_url, phone } = payload;
       if (!email || !password) {
         return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
       }
@@ -41,6 +41,7 @@ export async function POST(req: Request) {
           resume_text: resume_text || '',
           linkedin_url: linkedin_url || '',
           github_url: github_url || '',
+          phone: phone || '',
         }
       });
 
@@ -48,7 +49,7 @@ export async function POST(req: Request) {
     }
 
     if (action === 'UPDATE_CANDIDATE') {
-      const { id, email, password, name, professional_title, experience_level, resume_text, linkedin_url, github_url } = payload;
+      const { id, email, password, name, professional_title, experience_level, resume_text, linkedin_url, github_url, phone } = payload;
       if (!id) {
         return NextResponse.json({ error: 'Candidate ID is required' }, { status: 400 });
       }
@@ -61,6 +62,7 @@ export async function POST(req: Request) {
         resume_text: resume_text || '',
         linkedin_url: linkedin_url || '',
         github_url: github_url || '',
+        phone: phone || '',
       };
 
       if (password && password.trim() !== '') {

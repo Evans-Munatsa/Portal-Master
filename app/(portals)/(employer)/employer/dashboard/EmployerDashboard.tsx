@@ -857,7 +857,29 @@ ${description}
                          <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
                            <div>
                              <h3 className="font-bold text-lg">Manage Candidate: {selectedApplicant.candidate.name}</h3>
-                             <p className="text-xs text-slate-500 mt-1">{selectedApplicant.candidate.professional_title || 'Software Candidate'}</p>
+                             <p className="text-xs text-slate-500 mt-1">{selectedApplicant.candidate.professional_title || 'Software Candidate'}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-3.5 mt-2.5 text-xs text-slate-500 font-sans">
+                                <span className="flex items-center gap-1">
+                                  <span>📧</span> {selectedApplicant.candidate.email}
+                                </span>
+                                {selectedApplicant.candidate.phone && (
+                                  <span className="flex items-center gap-1 font-bold text-[#7145FF] dark:text-[#a385ff]">
+                                    <span>📞</span> {selectedApplicant.candidate.phone}
+                                  </span>
+                                )}
+                                {selectedApplicant.candidate.linkedin_url && (
+                                  <a href={selectedApplicant.candidate.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-blue-605 hover:underline">
+                                    LinkedIn ↗
+                                  </a>
+                                )}
+                                {selectedApplicant.candidate.github_url && (
+                                  <a href={selectedApplicant.candidate.github_url} target="_blank" rel="noopener noreferrer" className="text-slate-605 dark:text-slate-400 hover:underline">
+                                    GitHub ↗
+                                  </a>
+                                )}
+                              </div>
+                               {/* Contact info links displayed */}
                            </div>
                            <button onClick={() => setSelectedApplicant(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-350 text-2xl font-bold leading-none cursor-pointer border-none bg-transparent">
                              &times;

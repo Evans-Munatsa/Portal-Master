@@ -14,6 +14,7 @@ export default function OnboardingPage() {
   const [name, setName] = useState("");
   const [professionalTitle, setProfessionalTitle] = useState("");
   const [experienceLevel, setExperienceLevel] = useState("Mid-Level");
+  const [phone, setPhone] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
 
@@ -33,6 +34,7 @@ export default function OnboardingPage() {
           experience_level: experienceLevel,
           linkedin_url: linkedinUrl,
           github_url: githubUrl,
+          phone,
         }),
       });
       if (res.ok) setStep(2);
@@ -166,6 +168,18 @@ export default function OnboardingPage() {
                   <option>Senior (5+ years)</option>
                   <option>Lead / Manager</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-white text-slate-900"
+                  placeholder="e.g. +1 (555) 012-3456"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">

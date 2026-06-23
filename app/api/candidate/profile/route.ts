@@ -10,7 +10,7 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { name, professional_title, experience_level, resume_text, linkedin_url, github_url } = await req.json();
+    const { name, professional_title, experience_level, resume_text, linkedin_url, github_url, phone } = await req.json();
 
     // Get old user details to see if resume text is changing
     const currentUser = await db.user.findUnique({
@@ -30,6 +30,7 @@ export async function PUT(req: Request) {
         ...(resume_text !== undefined && { resume_text }),
         ...(linkedin_url !== undefined && { linkedin_url }),
         ...(github_url !== undefined && { github_url }),
+        ...(phone !== undefined && { phone }),
       },
     });
 

@@ -7,7 +7,7 @@ export async function POST(req: Request) {
     const session = await getSession();
     if (!session || session.role !== 'CANDIDATE') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { name, professional_title, experience_level, linkedin_url, github_url } = await req.json();
+    const { name, professional_title, experience_level, linkedin_url, github_url, phone } = await req.json();
     await db.user.update({
       where: { id: session.userId },
       data: {
@@ -16,6 +16,7 @@ export async function POST(req: Request) {
         experience_level,
         linkedin_url,
         github_url,
+        phone,
       },
     });
 

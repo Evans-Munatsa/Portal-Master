@@ -24,6 +24,7 @@ export default function SuperadminCandidateModal({
   const [candResumeText, setCandResumeText] = useState('');
   const [candLinkedinUrl, setCandLinkedinUrl] = useState('');
   const [candGithubUrl, setCandGithubUrl] = useState('');
+  const [candPhone, setCandPhone] = useState('');
 
   const [submitError, setSubmitError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState('');
@@ -39,6 +40,7 @@ export default function SuperadminCandidateModal({
       setCandResumeText(editingCand.resume_text || '');
       setCandLinkedinUrl(editingCand.linkedin_url || '');
       setCandGithubUrl(editingCand.github_url || '');
+      setCandPhone(editingCand.phone || '');
     } else {
       setCandEmail('');
       setCandPassword('');
@@ -48,6 +50,7 @@ export default function SuperadminCandidateModal({
       setCandResumeText('');
       setCandLinkedinUrl('');
       setCandGithubUrl('');
+      setCandPhone('');
     }
     setSubmitError('');
     setSubmitSuccess('');
@@ -71,7 +74,8 @@ export default function SuperadminCandidateModal({
       experience_level: candExperienceLevel,
       resume_text: candResumeText,
       linkedin_url: candLinkedinUrl,
-      github_url: candGithubUrl
+      github_url: candGithubUrl,
+      phone: candPhone
     };
 
     const action = editingCand ? 'UPDATE_CANDIDATE' : 'CREATE_CANDIDATE';
@@ -169,18 +173,31 @@ export default function SuperadminCandidateModal({
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] uppercase font-bold tracking-widest text-slate-404 font-mono block">Experience Group Level</label>
-            <select
-              className="w-full bg-slate-955/80 border border-slate-808 rounded-xl p-2.5 text-xs text-white font-mono bg-slate-950"
-              value={candExperienceLevel}
-              onChange={(e) => setCandExperienceLevel(e.target.value)}
-            >
-              <option value="ENTRY">ENTRY (0-2 Years)</option>
-              <option value="INTERMEDIATE">INTERMEDIATE (2-5 Years)</option>
-              <option value="SENIOR">SENIOR (5-8 Years)</option>
-              <option value="LEAD">LEAD / PRINCIPAL (8+ Years)</option>
-            </select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-bold tracking-widest text-[#a385ff] font-mono block">Experience Group Level</label>
+              <select
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono"
+                value={candExperienceLevel}
+                onChange={(e) => setCandExperienceLevel(e.target.value)}
+              >
+                <option value="ENTRY">ENTRY (0-2 Years)</option>
+                <option value="INTERMEDIATE">INTERMEDIATE (2-5 Years)</option>
+                <option value="SENIOR">SENIOR (5-8 Years)</option>
+                <option value="LEAD">LEAD / PRINCIPAL (8+ Years)</option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-bold tracking-widest text-[#a385ff] font-mono block">Phone Number</label>
+              <input 
+                type="tel" 
+                className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono"
+                value={candPhone}
+                onChange={(e) => setCandPhone(e.target.value)}
+                placeholder="e.g. +1 (555) 012-3456"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

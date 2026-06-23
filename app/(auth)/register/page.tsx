@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Mail, Lock, User, Building2, Loader2 } from 'lucide-react';
+import { ArrowRight, Mail, Lock, User, Building2, Loader2, Phone } from 'lucide-react';
 import LaunchPathLogo from '@/components/LaunchPathLogo';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
   const [accountType, setAccountType] = useState<'talent' | 'client'>('talent');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -26,7 +27,13 @@ export default function RegisterPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password, name, role: accountType === 'talent' ? 'CANDIDATE' : 'CLIENT' }),
+        body: JSON.stringify({ 
+          email, 
+          password, 
+          name, 
+          phone, 
+          role: accountType === 'talent' ? 'CANDIDATE' : 'CLIENT' 
+        }),
       });
       
       const data = await res.json();
@@ -139,6 +146,24 @@ export default function RegisterPage() {
                     className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#7145FF]/20 focus:border-[#7145FF] transition-colors outline-none text-slate-900"
                     placeholder="you@example.com"
                     required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Phone Number
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Phone className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#7145FF]/20 focus:border-[#7145FF] transition-colors outline-none text-slate-900"
+                    placeholder="e.g. +1 (555) 012-3456"
                   />
                 </div>
               </div>

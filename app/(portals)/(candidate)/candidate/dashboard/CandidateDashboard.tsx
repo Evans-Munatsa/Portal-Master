@@ -294,6 +294,7 @@ export default function CandidateDashboard({ data, user, onRefresh, onLogout }: 
   const [profileResumeText, setProfileResumeText] = useState(user?.resume_text || '');
   const [profileLinkedin, setProfileLinkedin] = useState(user?.linkedin_url || '');
   const [profileGithub, setProfileGithub] = useState(user?.github_url || '');
+  const [profilePhone, setProfilePhone] = useState(user?.phone || '');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isEditingResume, setIsEditingResume] = useState(false);
@@ -306,6 +307,7 @@ export default function CandidateDashboard({ data, user, onRefresh, onLogout }: 
       setProfileResumeText(user.resume_text || '');
       setProfileLinkedin(user.linkedin_url || '');
       setProfileGithub(user.github_url || '');
+      setProfilePhone(user.phone || '');
       setEmail(user.email || '');
     }
   }, [user]);
@@ -467,6 +469,7 @@ export default function CandidateDashboard({ data, user, onRefresh, onLogout }: 
           resume_text: profileResumeText,
           linkedin_url: profileLinkedin,
           github_url: profileGithub,
+          phone: profilePhone,
         }),
       });
 
@@ -892,6 +895,11 @@ export default function CandidateDashboard({ data, user, onRefresh, onLogout }: 
                             GitHub
                           </a>
                         )}
+                        {user?.phone && (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/45 px-3 py-1 rounded-full">
+                            📞 {user.phone}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -902,6 +910,7 @@ export default function CandidateDashboard({ data, user, onRefresh, onLogout }: 
                       setProfileExp(user?.experience_level || 'Junior');
                       setProfileLinkedin(user?.linkedin_url || '');
                       setProfileGithub(user?.github_url || '');
+                      setProfilePhone(user?.phone || '');
                       setIsEditingProfile(true);
                     }}
                     className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
@@ -934,19 +943,31 @@ export default function CandidateDashboard({ data, user, onRefresh, onLogout }: 
                       />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Experience Level</label>
-                    <select
-                      value={profileExp}
-                      onChange={(e) => setProfileExp(e.target.value)}
-                      className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                    >
-                      <option value="Junior">Junior</option>
-                      <option value="Mid-Level">Mid-Level</option>
-                      <option value="Senior">Senior</option>
-                      <option value="Lead">Lead</option>
-                      <option value="Executive">Executive</option>
-                    </select>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Experience Level</label>
+                      <select
+                        value={profileExp}
+                        onChange={(e) => setProfileExp(e.target.value)}
+                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      >
+                        <option value="Junior">Junior</option>
+                        <option value="Mid-Level">Mid-Level</option>
+                        <option value="Senior">Senior</option>
+                        <option value="Lead">Lead</option>
+                        <option value="Executive">Executive</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Phone Number</label>
+                      <input
+                        type="tel"
+                        value={profilePhone}
+                        onChange={(e) => setProfilePhone(e.target.value)}
+                        placeholder="e.g. +1 (555) 019-2834"
+                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      />
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>

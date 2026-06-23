@@ -19,6 +19,9 @@ export async function GET() {
         professional_title: true,
         experience_level: true,
         resume_text: true,
+        phone: true,
+        linkedin_url: true,
+        github_url: true,
       },
     });
 

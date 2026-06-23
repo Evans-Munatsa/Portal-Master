@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 
 export async function POST(req: Request) {
   try {
-    const { email, password, name, role = 'CANDIDATE' } = await req.json();
+    const { email, password, name, phone, role = 'CANDIDATE' } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
@@ -22,6 +22,7 @@ export async function POST(req: Request) {
         email,
         password: hashedPassword,
         name,
+        phone: phone || null,
         role,
       },
     });

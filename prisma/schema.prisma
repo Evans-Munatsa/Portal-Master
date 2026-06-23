@@ -37,6 +37,7 @@ model User {
   resume_text             String?
   linkedin_url            String?
   github_url              String?
+  phone                   String?
   reset_token             String?
   reset_token_expiry      DateTime?
   job_matches             JobMatch[]

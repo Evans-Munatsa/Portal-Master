@@ -7,7 +7,7 @@ export class CandidateService {
     return prisma.user.findUnique({
       where: { id: userId },
       select: {
-         id: true, name: true, email: true, professional_title: true, experience_level: true, resume_text: true, role: true 
+         id: true, name: true, email: true, professional_title: true, experience_level: true, resume_text: true, role: true, phone: true, linkedin_url: true, github_url: true 
       }
     });
   }
