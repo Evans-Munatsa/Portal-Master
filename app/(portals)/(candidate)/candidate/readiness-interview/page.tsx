@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import LaunchpathMuxPlayer from '@/components/LaunchpathMuxPlayer';
+import LaunchpathMuxPlayer from '@/app/components/LaunchpathMuxPlayer';
 import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, Video, VideoOff, Timer, ChevronRight, 
@@ -793,19 +793,19 @@ export default function ReadinessInterviewPage() {
                   <div className="relative aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center border border-slate-800 shadow-inner">
                     {questionVideos[finishedActiveIdx] ? (
                       <LaunchpathMuxPlayer 
-                        videoUrl={questionVideos[finishedActiveIdx]} 
+                        videoUrl={questionVideos[finishedActiveIdx] as string | undefined} 
                         poster={LAUNCHPATH_POSTER_SVG}
                         className="w-full h-full"
                       />
                     ) : evaluationResult?.video_url ? (
                       <LaunchpathMuxPlayer 
-                        videoUrl={evaluationResult.video_url} 
+                        videoUrl={evaluationResult.video_url as string | undefined} 
                         poster={LAUNCHPATH_POSTER_SVG}
                         className="w-full h-full"
                       />
                     ) : savedVideosUrl && finishedActiveIdx === QUESTIONS.length - 1 ? (
                       <LaunchpathMuxPlayer 
-                        videoUrl={savedVideosUrl} 
+                        videoUrl={savedVideosUrl as string | undefined} 
                         poster={LAUNCHPATH_POSTER_SVG}
                         className="w-full h-full"
                       />
