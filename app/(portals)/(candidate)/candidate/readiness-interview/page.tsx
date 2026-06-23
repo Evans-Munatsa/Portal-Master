@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import LaunchpathMuxPlayer from '@/app/components/LaunchpathMuxPlayer';
+import LaunchpathMuxPlayer from '@/components/LaunchpathMuxPlayer';
 import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, Video, VideoOff, Timer, ChevronRight, 
