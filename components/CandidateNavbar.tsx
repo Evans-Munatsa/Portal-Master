@@ -17,20 +17,24 @@ import {
   Menu,
   X,
   User,
-  ChevronDown
+  ChevronDown,
+  Mail
 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
+import { useToast } from './ToastNotification';
 
 export interface CandidateNavbarProps {
   user: {
     name?: string;
     email?: string;
     role?: string;
+    realRole?: string;
     professional_title?: string;
   };
   activeTab?: string;
   setActiveTab?: (tab: string) => void;
   applicationsCount?: number;
+  unreadNotificationsCount?: number;
   onLogout: () => void;
   onTabChange?: (tab: string) => void;
 }
@@ -40,6 +44,7 @@ export default function CandidateNavbar({
   activeTab,
   setActiveTab,
   applicationsCount = 0,
+  unreadNotificationsCount = 0,
   onLogout,
   onTabChange
 }: CandidateNavbarProps) {
@@ -49,6 +54,46 @@ export default function CandidateNavbar({
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [switching, setSwitching] = useState(false);
+  const { toast } = useToast();
+
+  const handleCandidateRoleSwitch = async (targetRole: 'SUPERADMIN' | 'CANDIDATE' | 'EMPLOYER') => {
+    if (switching) return;
+    setSwitching(true);
+    
+    try {
+      const res = await fetch('/api/superadmin/thanos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: targetRole }),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        toast(`${result.message || 'Thanos mode updated successfully'} 🛡️`, 'success');
+        
+        setTimeout(() => {
+          if (targetRole === 'CANDIDATE') {
+            router.push('/candidate/dashboard');
+          } else if (targetRole === 'EMPLOYER') {
+            router.push('/employer/dashboard');
+          } else {
+            router.push('/admin/dashboard');
+          }
+          setTimeout(() => {
+            window.location.reload();
+          }, 100);
+        }, 800);
+      } else {
+        const errorData = await res.json();
+        toast(errorData.error || 'Failed to trigger Thanos switch.', 'error');
+        setSwitching(false);
+      }
+    } catch (err: any) {
+      toast('Error switching role: ' + err.message, 'error');
+      setSwitching(false);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -131,10 +176,24 @@ export default function CandidateNavbar({
                 className={getLinkClasses(isDashboard ? activeTab === 'Applications' : false)}
               >
                 <Briefcase className="w-4 h-4" />
-                <span>My Applications</span>
+                <span>My Proposals</span>
                 {applicationsCount > 0 && (
                   <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">
                     {applicationsCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Inbox */}
+              <button
+                onClick={() => handleTabClick('Inbox')}
+                className={getLinkClasses(isDashboard ? activeTab === 'Inbox' : false)}
+              >
+                <Mail className="w-4 h-4" />
+                <span>Inbox</span>
+                {unreadNotificationsCount > 0 && (
+                  <span className="bg-red-500 text-white text-[10.5px] px-2 py-0.5 rounded-full font-extrabold shadow-sm animate-pulse">
+                    {unreadNotificationsCount}
                   </span>
                 )}
               </button>
@@ -142,7 +201,52 @@ export default function CandidateNavbar({
           </div>
 
           {/* Right section: Profile & Menu Controls */}
-          <div className="flex items-center gap-4"> 
+          <div className="flex items-center gap-4">
+            
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
+            {user?.realRole === 'SUPERADMIN' && (
+              <div className="hidden lg:flex items-center bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full p-1 gap-1">
+                <span className="text-[10px] font-extrabold text-[#7145FF] dark:text-violet-400 uppercase tracking-widest pl-2 pr-1 flex items-center gap-1 select-none">
+                  <Sparkles className="w-3 h-3 animate-pulse text-violet-400" />
+                  Thanos:
+                </span>
+                <button
+                  onClick={() => handleCandidateRoleSwitch('SUPERADMIN')}
+                  disabled={switching}
+                  className={`flex items-center gap-1 py-1 px-2.5 rounded-full text-[10px] font-bold transition cursor-pointer ${
+                    user.role === 'SUPERADMIN' || (!user.role || user.role === 'ADMIN')
+                      ? 'bg-[#7145FF] text-white shadow-sm shadow-[#7145FF]/20'
+                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Admin
+                </button>
+                <button
+                  onClick={() => handleCandidateRoleSwitch('CANDIDATE')}
+                  disabled={switching}
+                  className={`flex items-center gap-1 py-1 px-2.5 rounded-full text-[10px] font-bold transition cursor-pointer ${
+                    user.role === 'CANDIDATE'
+                      ? 'bg-[#7145FF] text-white shadow-sm shadow-[#7145FF]/20'
+                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Candidate
+                </button>
+                <button
+                  onClick={() => handleCandidateRoleSwitch('EMPLOYER')}
+                  disabled={switching}
+                  className={`flex items-center gap-1 py-1 px-2.5 rounded-full text-[10px] font-bold transition cursor-pointer ${
+                    user.role === 'EMPLOYER'
+                      ? 'bg-[#7145FF] text-white shadow-sm shadow-[#7145FF]/20'
+                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-205'
+                  }`}
+                >
+                  Employer
+                </button>
+              </div>
+            )}
             
             {/* Desktop Settings & Profile actions */}
             <div className="hidden md:flex items-center gap-4 relative">
@@ -214,9 +318,6 @@ export default function CandidateNavbar({
               </div>
             </div>
 
-            {/* Theme Toggle */}
-            <ThemeToggle />
-
             {/* Mobile menu button */}
             <div className="flex md:hidden">
               <button
@@ -238,6 +339,50 @@ export default function CandidateNavbar({
             <p className="text-sm font-semibold truncate text-slate-950 dark:text-white">{user?.name || 'Talent'}</p>
             <p className="text-xs text-slate-400 truncate">{user?.professional_title || 'Professional Partner'}</p>
           </div>
+
+          {user?.realRole === 'SUPERADMIN' && (
+            <div className="bg-slate-100 dark:bg-slate-900 rounded-lg p-2.5 mx-1 border border-slate-200 dark:border-slate-800 space-y-1.5 shadow-sm">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-violet-400 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 animate-pulse text-violet-400" />
+                Thanos Mobile Switcher
+              </p>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => handleCandidateRoleSwitch('SUPERADMIN')}
+                  disabled={switching}
+                  className={`flex-1 flex items-center justify-center py-1.5 px-2.5 rounded-lg text-[10px] font-bold transition cursor-pointer ${
+                    user.role === 'SUPERADMIN' || (!user.role || user.role === 'ADMIN')
+                      ? 'bg-[#7145FF] text-white shadow-sm shadow-[#7145FF]/20'
+                      : 'bg-slate-50 dark:bg-slate-950 text-slate-500 font-medium'
+                  }`}
+                >
+                  Admin
+                </button>
+                <button
+                  onClick={() => handleCandidateRoleSwitch('CANDIDATE')}
+                  disabled={switching}
+                  className={`flex-1 flex items-center justify-center py-1.5 px-2.5 rounded-lg text-[10px] font-bold transition cursor-pointer ${
+                    user.role === 'CANDIDATE'
+                      ? 'bg-[#7145FF] text-white shadow-sm shadow-[#7145FF]/20'
+                      : 'bg-slate-50 dark:bg-slate-950 text-slate-500 font-medium'
+                  }`}
+                >
+                  Candidate
+                </button>
+                <button
+                  onClick={() => handleCandidateRoleSwitch('EMPLOYER')}
+                  disabled={switching}
+                  className={`flex-1 flex items-center justify-center py-1.5 px-2.5 rounded-lg text-[10px] font-bold transition cursor-pointer ${
+                    user.role === 'EMPLOYER'
+                      ? 'bg-[#7145FF] text-white shadow-sm shadow-[#7145FF]/20'
+                      : 'bg-slate-50 dark:bg-slate-950 text-slate-500 font-medium'
+                  }`}
+                >
+                  Employer
+                </button>
+              </div>
+            </div>
+          )}
 
           <button
             onClick={() => handleTabClick('Jobs')}
@@ -272,6 +417,19 @@ export default function CandidateNavbar({
             {applicationsCount > 0 && (
               <span className="bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 text-xs px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-800">
                 {applicationsCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => handleTabClick('Inbox')}
+            className={getMobileLinkClasses(isDashboard ? activeTab === 'Inbox' : false)}
+          >
+            <Mail className="w-5 h-5 text-purple-500" />
+            <span className="flex-1 text-left">Inbox</span>
+            {unreadNotificationsCount > 0 && (
+              <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                {unreadNotificationsCount}
               </span>
             )}
           </button>

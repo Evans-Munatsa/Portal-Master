@@ -37,3 +37,166 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 .font-mono {
   font-family: var(--LexendDeca), Helvetica, Arial, sans-serif !important;
 }
+
+
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+/* more styles from index.css */
+
+
+
+/* GreenBird design system. All colors HSL. */
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 7%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 7%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 7%;
+
+    /* Near-black ink used for buttons and pills */
+    --primary: 0 0% 7%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 7%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 7%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
+    --ring: 0 0% 7%;
+
+    --radius: 9999px;
+
+    /* Page band between hero and dark section */
+    --page: 0 0% 96%;
+
+    /* Dark contact card */
+    --dark: 0 0% 7%;
+    --dark-foreground: 0 0% 100%;
+    --dark-input: 0 0% 0%;
+    --dark-border: 0 0% 18%;
+    --dark-muted: 0 0% 65%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+
+
+/* Use Sansation-like rounded font; fall back to Inter */
+@layer utilities {
+ 
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+      opacity var(--reveal-duration) var(--ease-brand),
+      transform var(--reveal-duration) var(--ease-brand),
+      filter var(--reveal-duration) var(--ease-brand);
+    filter: blur(8px);
+    will-change: opacity, transform, filter;
+  }
+  .reveal.is-visible { opacity: 1; transform: translateY(0); filter: blur(0); }
+
+  /* Route transitions */
+  .route-enter { animation: route-in var(--route-duration) var(--ease-brand) both; }
+  .route-exit  { animation: route-out 320ms var(--ease-brand) both; }
+  @keyframes route-in {
+    0%   { opacity: 0; transform: translateY(14px); filter: blur(6px); }
+    100% { opacity: 1; transform: translateY(0);    filter: blur(0); }
+  }
+  @keyframes route-out {
+    0%   { opacity: 1; transform: translateY(0);    filter: blur(0); }
+    100% { opacity: 0; transform: translateY(-10px); filter: blur(4px); }
+  }
+
+  .hover-lift { transition: transform .5s var(--ease-brand), box-shadow .5s var(--ease-brand); }
+  .hover-lift:hover { transform: translateY(-6px); box-shadow: 0 20px 40px -20px hsl(var(--foreground) / 0.25); }
+  .image-zoom { transition: transform 1.2s var(--ease-brand); }
+  .group:hover .image-zoom { transform: scale(1.06); }
+  .shine { position: relative; overflow: hidden; }
+  .shine::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(120deg, transparent 30%, hsl(0 0% 100% / .35) 50%, transparent 70%);
+    transform: translateX(-100%); transition: transform .8s var(--ease-brand); pointer-events: none;
+  }
+  .shine:hover::after { transform: translateX(100%); }
+  .text-gradient {
+    background: linear-gradient(90deg, hsl(150 60% 40%), hsl(45 90% 55%), hsl(195 80% 50%), hsl(150 60% 40%));
+    background-size: 300% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: gradient-shift 10s ease infinite;
+  }
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .underline-grow { position: relative; }
+  .underline-grow::after {
+    content: ""; position: absolute; left: 0; bottom: -2px; height: 2px; width: 100%;
+    background: currentColor; transform: scaleX(0); transform-origin: right;
+    transition: transform .4s var(--ease-brand);
+  }
+  .underline-grow:hover::after { transform: scaleX(1); transform-origin: left; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; filter: none; }
+    .route-enter, .route-exit { animation: none !important; }
+    .animate-marquee, .text-gradient { animation: none !important; }
+  }
+}

@@ -31,6 +31,23 @@ async function applyHandler(req: Request, context: any, session: any) {
     }
   });
 
+  const job = await db.job.findUnique({
+    where: { id: jobId }
+  });
+
+  const jobTitle = job?.title || 'Job Post';
+  const companyName = job?.company || 'Employer';
+
+  // Create inbox acknowledgement notification
+  await db.notification.create({
+    data: {
+      user_id: session.userId,
+      title: `Application Acknowledgment: ${jobTitle}`,
+      content: `Hi there! This is a confirmation that your job application for "${jobTitle}" at ${companyName} has been successfully submitted. We will keep you updated if the employer decides to invite you to an interview. Good luck!`,
+      type: 'APPLICATION'
+    }
+  });
+
   return NextResponse.json({ success: true, application });
 }
 

@@ -48,8 +48,23 @@ model User {
   interviews_as_employer  Interview[]      @relation("InterviewEmployer")
   interviews_as_candidate Interview[]      @relation("InterviewCandidate")
   video_interviews        VideoInterview[]
+  notifications           Notification[]
 
   @@map("users")
+}
+
+model Notification {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  user         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  title        String
+  content      String
+  type         String   @default("INFO") // INFO, APPLICATION, INTERVIEW
+  is_read      Boolean  @default(false)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("notifications")
 }
 
 model VideoInterview {
