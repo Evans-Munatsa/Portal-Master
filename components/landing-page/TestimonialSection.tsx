@@ -43,8 +43,9 @@ export const TestimonialSection = () => {
                 <path d="M28 44c0-8 6-14 14-14M40 44c0-8 6-14 14-14" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" />
               </svg>
               <blockquote className="text-[18px] leading-[1.6] text-white md:text-[20px]">
-                "We hired three graduates through LaunchPath in under six weeks. The matching was sharp, the screening saved us hours, and every single one is still with us a year later. It is the best hiring decision we have made as a small team."
-              </blockquote>
+              {"\"We hired three graduates through LaunchPath in under six weeks. The matching was sharp, the screening saved us hours, and every single one is still with us a year later. It's the best hiring decision we've made as a small team.\""}
+            </blockquote>
+
               
               <div className="flex items-center gap-4">
                 {/* Optimized Avatar Image Layout */}
